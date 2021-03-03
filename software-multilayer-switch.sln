@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31025.194
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "software-multilayer-switch", "software-multilayer-switch\software-multilayer-switch.vcxproj", "{CF7FAC17-C4C6-48A4-9B1B-A37B1004F9C7}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CF7FAC17-C4C6-48A4-9B1B-A37B1004F9C7}.Debug|x86.ActiveCfg = Debug|Win32
+		{CF7FAC17-C4C6-48A4-9B1B-A37B1004F9C7}.Debug|x86.Build.0 = Debug|Win32
+		{CF7FAC17-C4C6-48A4-9B1B-A37B1004F9C7}.Release|x86.ActiveCfg = Release|Win32
+		{CF7FAC17-C4C6-48A4-9B1B-A37B1004F9C7}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4E712F32-08F1-4CAC-BD04-5DC620B96912}
+	EndGlobalSection
+EndGlobal
