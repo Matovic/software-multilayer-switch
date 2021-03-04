@@ -5,12 +5,15 @@
 
 #include "Port.hpp"
 
+#include <mutex>
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
     MainWindow(QWidget *parent = Q_NULLPTR);
+    void writeStatistics();
 
 private:
     Ui::MainWindowClass ui;
@@ -19,6 +22,11 @@ private:
 
     Port port1_;
     Port port2_;
+
+    std::mutex mutex_mtx;
+
+    bool analyzeTraffic(Port*, Tins::PDU&);
+    void captureTraffic(Port*);
 
 private slots:
     void startButtonPressed();

@@ -25,34 +25,15 @@ void MainWindow::startButtonPressed()
     this->ui.textDisplay->setText(QString::fromStdString(this->port1_.getPortStatistics()));
     this->ui.textDisplay->append(QString::fromStdString(this->port2_.getPortStatistics()));
 
-    std::thread th1(captureTraffic, &this->port1_);
-    std::thread th2(captureTraffic, &this->port2_);
+    std::thread th1(&MainWindow::captureTraffic, this, &this->port1_);
+    std::thread th2(&MainWindow::captureTraffic, this, &this->port2_);
+	    
+    //th1.detach();
+    //th2.detach();
+	th1.join();
+	th2.join();
 
-    //auto f = [](MainWindow* window) {
-    //    while (window->startButtonClicked_)
-    //    {
-    //        window->ui.textDisplay->setText(QString::fromStdString(window->port1_.getPortStatistics()));
-    //        window->ui.textDisplay->append(QString::fromStdString(window->port2_.getPortStatistics()));
-    //    }
-    //};
-
-    // This thread is launched by using  
-    // lamda expression as callable 
-    //std::thread th3(f, this);
-
-    //while (this->startButtonClicked_)
-    //{
-    //    this->ui.textDisplay->setText(QString::fromStdString(this->port1_.getPortStatistics()));
-    //    this->ui.textDisplay->append(QString::fromStdString(this->port2_.getPortStatistics()));
-    //}
-
-    // Wait for thread t1 to finish 
-    //th1.join();
-    // Wait for thread t2 to finish 
-    //th2.join();
-
-    this->ui.textDisplay->setText(QString::fromStdString(this->port1_.getPortStatistics()));
-    this->ui.textDisplay->append(QString::fromStdString(this->port2_.getPortStatistics()));
+	this->writeStatistics();
 }
 
 void MainWindow::clearButtonPressed()
@@ -63,8 +44,133 @@ void MainWindow::clearButtonPressed()
     this->port1_.clearIOStatistics();
     this->port2_.clearIOStatistics();
 
-    this->ui.textDisplay->setText(QString::fromStdString(this->port1_.getPortStatistics()));
-    this->ui.textDisplay->append(QString::fromStdString(this->port2_.getPortStatistics()));
+	this->writeStatistics();
 
     if (this->startButtonClicked_) this->startButtonClicked_ = false;
+}
+
+bool MainWindow::analyzeTraffic(Port* port, Tins::PDU& pdu)
+{
+	//this->ui.textDisplay->setText(QString::fromStdString(this->port1_.getPortStatistics()));
+	//this->ui.textDisplay->append(QString::fromStdString(this->port2_.getPortStatistics()));
+
+	try
+	{
+		const Tins::EthernetII& eth = pdu.rfind_pdu<Tins::EthernetII>();
+		port->getInputTraffic().incrementEthernetII();
+		port->getOutputTraffic().incrementEthernetII();
+	}
+	catch (const std::exception&)
+	{
+		Tins::PacketSender sender;
+		Tins::NetworkInterface iface = Tins::NetworkInterface::from_index(PORT1_INTERFACE);
+		if (port->getName() == "port1")	iface = Tins::NetworkInterface::from_index(PORT2_INTERFACE);
+		sender.send(pdu, iface);
+
+		// this->writeStatistics();
+
+		return false;
+	}
+
+	try
+	{
+		const Tins::IP& ip = pdu.rfind_pdu<Tins::IP>();
+		port->getInputTraffic().incrementIP();
+		port->getOutputTraffic().incrementIP();
+	}
+	catch (const std::exception&)
+	{
+		try
+		{
+			const Tins::ARP& arp = pdu.rfind_pdu<Tins::ARP>();
+			port->getInputTraffic().incrementARP();
+			port->getOutputTraffic().incrementARP();
+
+			Tins::PacketSender sender;
+			Tins::NetworkInterface iface = Tins::NetworkInterface::from_index(PORT1_INTERFACE);
+			if (port->getName() == "port1")	iface = Tins::NetworkInterface::from_index(PORT2_INTERFACE);
+			sender.send(pdu, iface);
+
+			// this->writeStatistics();
+
+			return false;
+		}
+		catch (const std::exception&)
+		{
+			// this->mutex_mtx.lock();
+			Tins::PacketSender sender;
+			Tins::NetworkInterface iface = Tins::NetworkInterface::from_index(PORT1_INTERFACE);
+			if (port->getName() == "port1")	iface = Tins::NetworkInterface::from_index(PORT2_INTERFACE);
+			sender.send(pdu, iface);
+
+			// this->writeStatistics();
+
+			return false;
+		}
+	}
+
+	try
+	{
+		const Tins::TCP& tcp = pdu.rfind_pdu<Tins::TCP>();
+		port->getInputTraffic().incrementTCP();
+		port->getOutputTraffic().incrementTCP();
+	}
+	catch (const std::exception&)
+	{
+		try
+		{
+			const Tins::UDP& udp = pdu.rfind_pdu<Tins::UDP>();
+			port->getInputTraffic().incrementUDP();
+			port->getOutputTraffic().incrementUDP();
+		}
+		catch (const std::exception&)
+		{
+			try
+			{
+				const Tins::ICMP& icmp = pdu.rfind_pdu<Tins::ICMP>();
+				port->getInputTraffic().incrementICMP();
+				port->getOutputTraffic().incrementICMP();
+			}
+			catch (const std::exception&)
+			{
+				Tins::PacketSender sender;
+				Tins::NetworkInterface iface = Tins::NetworkInterface::from_index(PORT1_INTERFACE);
+				if (port->getName() == "port1")	iface = Tins::NetworkInterface::from_index(PORT2_INTERFACE);
+				sender.send(pdu, iface);
+
+				// this->writeStatistics();
+
+				return false;
+			}
+		}
+	}
+
+	Tins::PacketSender sender;
+	Tins::NetworkInterface iface = Tins::NetworkInterface::from_index(PORT1_INTERFACE);
+	if (port->getName() == "port1")	iface = Tins::NetworkInterface::from_index(PORT2_INTERFACE);
+	sender.send(pdu, iface);
+
+	// this->writeStatistics();
+
+	return false;
+}
+
+void MainWindow::captureTraffic(Port* port)
+{
+    Tins::Sniffer sniffer(port->getNetworkInterface_().name());
+
+    sniffer.sniff_loop(
+        std::bind(
+            &MainWindow::analyzeTraffic,
+            this, port,
+            std::placeholders::_1
+        )
+    );
+}
+
+void MainWindow::writeStatistics()
+{
+	std::lock_guard<std::mutex> lock(this->mutex_mtx);
+	this->ui.textDisplay->setText(QString::fromStdString(this->port1_.getPortStatistics()));
+	this->ui.textDisplay->append(QString::fromStdString(this->port2_.getPortStatistics()));
 }

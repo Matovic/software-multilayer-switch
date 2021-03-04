@@ -17,9 +17,15 @@ public:
 	Port(const std::string&, const uint32_t&);
 	~Port();
 
-	bool analyzeTraffic(Tins::PDU& pdu);
+	/*bool analyzeTraffic(Tins::PDU&);*/
 	void clearIOStatistics();
 	std::string getPortStatistics();
+
+	Tins::NetworkInterface getNetworkInterface_();
+	std::string getName();
+	PortCounter& getInputTraffic();
+	PortCounter& getOutputTraffic();
+
 
 	// Tins::NetworkInterface networkInterface_;
 
@@ -29,7 +35,7 @@ private:
 	PortCounter inputTraffic_;
 	PortCounter outputTraffic_;
 
-	friend void captureTraffic(Port*);
+	//friend void captureTraffic(Port*);
 };
 
-void captureTraffic(Port*);
+//void captureTraffic(Port*);
