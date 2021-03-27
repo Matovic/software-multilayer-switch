@@ -4,6 +4,7 @@
 
 // std
 #include <string>
+#include <deque>
 
 // libtins
 #include <tins/tins.h>
@@ -25,6 +26,7 @@ public:
 	std::string getName();
 	PortCounter& getInputTraffic();
 	PortCounter& getOutputTraffic();
+	std::deque<Tins::PDU*>& getBuffer();
 
 	//bool analyzeTraffic(Port*, Tins::PDU&);
 	void captureTraffic(Port*);
@@ -37,6 +39,7 @@ private:
 	std::string name_;
 	PortCounter inputTraffic_;
 	PortCounter outputTraffic_;
+	std::deque<Tins::PDU*> bufferPDU_;
 
 	bool analyzeTraffic(Port*, Tins::PDU&);
 	//friend void captureTraffic(Port*);

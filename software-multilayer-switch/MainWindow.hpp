@@ -13,7 +13,6 @@ class MainWindow : public QMainWindow
 
 public:
     MainWindow(QWidget *parent = Q_NULLPTR);
-    void writeStatistics();
 
 private:
     Ui::MainWindowClass ui;
@@ -25,7 +24,10 @@ private:
     // std::mutex mutex_mtx;
 
     std::string getCAM_Table();
+
+    void writePDU();
     void writeCAM_Table();
+    void writeStatistics();
 
 private slots:
     void startButtonPressed();

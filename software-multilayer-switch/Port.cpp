@@ -63,11 +63,17 @@ PortCounter& Port::getOutputTraffic()
 	return this->outputTraffic_;
 }
 
+std::deque<Tins::PDU*>& Port::getBuffer()
+{
+	return this->bufferPDU_;
+}
 
 bool Port::analyzeTraffic(Port* port2, Tins::PDU& pdu)
 {
 	try
 	{
+		this->bufferPDU_.push_front(&pdu);
+
 		const Tins::EthernetII& eth = pdu.rfind_pdu<Tins::EthernetII>();
 		this->getInputTraffic().incrementEthernetII();
 		port2->getOutputTraffic().incrementEthernetII();
@@ -78,8 +84,6 @@ bool Port::analyzeTraffic(Port* port2, Tins::PDU& pdu)
 		Tins::NetworkInterface iface = Tins::NetworkInterface::from_index(PORT1_INTERFACE);
 		if (this->getName() == "port1")	iface = Tins::NetworkInterface::from_index(PORT2_INTERFACE);
 		sender.send(pdu, iface);
-
-		// this->writeStatistics();
 
 		return false;
 	}
