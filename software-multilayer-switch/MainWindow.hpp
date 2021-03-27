@@ -5,7 +5,7 @@
 
 #include "Port.hpp"
 
-#include <mutex>
+// #include <mutex>
 
 class MainWindow : public QMainWindow
 {
@@ -17,16 +17,15 @@ public:
 
 private:
     Ui::MainWindowClass ui;
-    std::string welcome_msg_ = "software multilayer switch";
     bool startButtonClicked_ = false;
 
     Port port1_;
     Port port2_;
 
-    std::mutex mutex_mtx;
+    // std::mutex mutex_mtx;
 
-    bool analyzeTraffic(Port*, Tins::PDU&);
-    void captureTraffic(Port*);
+    std::string getCAM_Table();
+    void writeCAM_Table();
 
 private slots:
     void startButtonPressed();

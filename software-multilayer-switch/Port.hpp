@@ -8,8 +8,8 @@
 // libtins
 #include <tins/tins.h>
 
-const uint32_t PORT1_INTERFACE = 11;
-const uint32_t PORT2_INTERFACE = 21;
+const uint32_t PORT1_INTERFACE = 12;
+const uint32_t PORT2_INTERFACE = 23;
 
 class Port
 {
@@ -26,6 +26,9 @@ public:
 	PortCounter& getInputTraffic();
 	PortCounter& getOutputTraffic();
 
+	//bool analyzeTraffic(Port*, Tins::PDU&);
+	void captureTraffic(Port*);
+
 
 	// Tins::NetworkInterface networkInterface_;
 
@@ -35,6 +38,7 @@ private:
 	PortCounter inputTraffic_;
 	PortCounter outputTraffic_;
 
+	bool analyzeTraffic(Port*, Tins::PDU&);
 	//friend void captureTraffic(Port*);
 };
 
