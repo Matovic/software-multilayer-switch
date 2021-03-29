@@ -2,34 +2,28 @@
 
 #include <QtWidgets/QMainWindow>
 #include "ui_MainWindow.h"
-
-#include "Port.hpp"
-
-// #include <mutex>
+#include "SwSwitch.hpp"
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = Q_NULLPTR);
+    MainWindow(SwSwitch&, QWidget *parent = Q_NULLPTR);
 
 private:
     Ui::MainWindowClass ui;
+    SwSwitch swSwitch_;
     bool startButtonClicked_ = false;
 
-    Port port1_;
-    Port port2_;
-
-    // std::mutex mutex_mtx;
-
     std::string getCAM_Table();
-
-    void writePDU();
     void writeCAM_Table();
     void writeStatistics();
+    void checkBuffer();
+    //void wrapperDone(const QString&);
 
 private slots:
     void startButtonPressed();
     void clearButtonPressed();
+    void writePDU();
 };

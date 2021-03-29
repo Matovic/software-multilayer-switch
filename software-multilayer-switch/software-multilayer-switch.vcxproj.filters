@@ -13,6 +13,12 @@
     <ClCompile Include="Port.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="QThreadDisplayPDU.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SwSwitch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">
@@ -32,6 +38,9 @@
     <QtMoc Include="MainWindow.hpp">
       <Filter>Header Files</Filter>
     </QtMoc>
+    <QtMoc Include="QThreadDisplayPDU.hpp">
+      <Filter>Header Files</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <QtRcc Include="MainWindow.qrc">
@@ -48,6 +57,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="PortCounter.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SwSwitch.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -87,6 +87,8 @@
   <ItemGroup>
     <ClCompile Include="Port.cpp" />
     <ClCompile Include="PortCounter.cpp" />
+    <ClCompile Include="SwSwitch.cpp" />
+    <ClCompile Include="QThreadDisplayPDU.cpp" />
     <QtRcc Include="MainWindow.qrc" />
     <QtUic Include="MainWindow.ui" />
     <QtMoc Include="MainWindow.hpp" />
@@ -96,6 +98,8 @@
   <ItemGroup>
     <ClInclude Include="Port.hpp" />
     <ClInclude Include="PortCounter.hpp" />
+    <ClInclude Include="SwSwitch.hpp" />
+    <QtMoc Include="QThreadDisplayPDU.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">

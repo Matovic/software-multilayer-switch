@@ -5,6 +5,7 @@
 // std
 #include <string>
 #include <deque>
+#include <mutex>
 
 // libtins
 #include <tins/tins.h>
@@ -16,9 +17,10 @@ class Port
 {
 public:
 	Port(const std::string&, const uint32_t&);
+	Port(const Port& port);
 	~Port();
 
-	/*bool analyzeTraffic(Tins::PDU&);*/
+	/*bool savePDU(Tins::PDU&);*/
 	void clearIOStatistics();
 	std::string getPortStatistics();
 
@@ -28,7 +30,7 @@ public:
 	PortCounter& getOutputTraffic();
 	std::deque<Tins::PDU*>& getBuffer();
 
-	//bool analyzeTraffic(Port*, Tins::PDU&);
+	//bool savePDU(Port*, Tins::PDU&);
 	void captureTraffic(Port*);
 
 
@@ -39,9 +41,11 @@ private:
 	std::string name_;
 	PortCounter inputTraffic_;
 	PortCounter outputTraffic_;
+	std::mutex mutex_mtx;
 	std::deque<Tins::PDU*> bufferPDU_;
 
-	bool analyzeTraffic(Port*, Tins::PDU&);
+	bool savePDU(Port*, Tins::PDU&);
+	void sendPDU(Port*, Tins::PDU&);
 	//friend void captureTraffic(Port*);
 };
 

@@ -7,12 +7,16 @@ Port::Port(const std::string& name, const uint32_t& port_interface)
 	: inputTraffic_{ "input" }, outputTraffic_{ "output" }, name_{ name },
 	networkInterface_{ Tins::NetworkInterface::from_index(port_interface) }
 {
+}
 
+Port::Port(const Port& port) 
+	: inputTraffic_{ "input" }, outputTraffic_{ "output" }, name_{ port.name_ },
+	networkInterface_{ Tins::NetworkInterface::from_index(port.networkInterface_) }
+{
 }
 
 Port::~Port()
 {
-
 }
 
 void Port::clearIOStatistics()
@@ -68,24 +72,36 @@ std::deque<Tins::PDU*>& Port::getBuffer()
 	return this->bufferPDU_;
 }
 
-bool Port::analyzeTraffic(Port* port2, Tins::PDU& pdu)
+void Port::sendPDU(Port* port, Tins::PDU& pdu)
+{
+	Tins::PacketSender sender;
+	if (this->getName() == "port1")	
+		sender.send(pdu, Tins::NetworkInterface::from_index(PORT2_INTERFACE));
+	else
+		sender.send(pdu, Tins::NetworkInterface::from_index(PORT1_INTERFACE));
+}
+
+bool Port::savePDU(Port* port2, Tins::PDU& pdu)
 {
 	try
 	{
+		const Tins::EthernetII& eth = pdu.rfind_pdu<Tins::EthernetII>();
+
+		// std::lock_guard<std::mutex> lock(this->mutex_mtx);
 		this->bufferPDU_.push_front(&pdu);
 
-		const Tins::EthernetII& eth = pdu.rfind_pdu<Tins::EthernetII>();
 		this->getInputTraffic().incrementEthernetII();
 		port2->getOutputTraffic().incrementEthernetII();
 	}
 	catch (const std::exception&)
 	{
-		Tins::PacketSender sender;
-		Tins::NetworkInterface iface = Tins::NetworkInterface::from_index(PORT1_INTERFACE);
-		if (this->getName() == "port1")	iface = Tins::NetworkInterface::from_index(PORT2_INTERFACE);
-		sender.send(pdu, iface);
+		//Tins::PacketSender sender;
+		//Tins::NetworkInterface iface = Tins::NetworkInterface::from_index(PORT1_INTERFACE);
+		//if (this->getName() == "port1")	iface = Tins::NetworkInterface::from_index(PORT2_INTERFACE);
+		//sender.send(pdu, iface);
 
-		return false;
+		this->sendPDU(port2, pdu);
+		return true;
 	}
 
 	try
@@ -102,26 +118,13 @@ bool Port::analyzeTraffic(Port* port2, Tins::PDU& pdu)
 			this->getInputTraffic().incrementARP();
 			port2->getOutputTraffic().incrementARP();
 
-			Tins::PacketSender sender;
-			Tins::NetworkInterface iface = Tins::NetworkInterface::from_index(PORT1_INTERFACE);
-			if (this->getName() == "port1")	iface = Tins::NetworkInterface::from_index(PORT2_INTERFACE);
-			sender.send(pdu, iface);
-
-			// this->writeStatistics();
-
-			return false;
+			this->sendPDU(port2, pdu);
+			return true;
 		}
 		catch (const std::exception&)
 		{
-			// this->mutex_mtx.lock();
-			Tins::PacketSender sender;
-			Tins::NetworkInterface iface = Tins::NetworkInterface::from_index(PORT1_INTERFACE);
-			if (this->getName() == "port1")	iface = Tins::NetworkInterface::from_index(PORT2_INTERFACE);
-			sender.send(pdu, iface);
-
-			// this->writeStatistics();
-
-			return false;
+			this->sendPDU(port2, pdu);
+			return true;
 		}
 	}
 
@@ -155,22 +158,13 @@ bool Port::analyzeTraffic(Port* port2, Tins::PDU& pdu)
 			}
 			catch (const std::exception&)
 			{
-				Tins::PacketSender sender;
-				Tins::NetworkInterface iface = Tins::NetworkInterface::from_index(PORT1_INTERFACE);
-				if (this->getName() == "port1")	iface = Tins::NetworkInterface::from_index(PORT2_INTERFACE);
-				sender.send(pdu, iface);
-
-				return false;
+				this->sendPDU(port2, pdu);
+				return true;
 			}
 		}
 	}
-
-	Tins::PacketSender sender;
-	Tins::NetworkInterface iface = Tins::NetworkInterface::from_index(PORT1_INTERFACE);
-	if (this->getName() == "port1")	iface = Tins::NetworkInterface::from_index(PORT2_INTERFACE);
-	sender.send(pdu, iface);
-
-	return false;
+	this->sendPDU(port2, pdu);
+	return true;
 }
 
 void Port::captureTraffic(Port* port2)
@@ -179,7 +173,7 @@ void Port::captureTraffic(Port* port2)
 
 	sniffer.sniff_loop(
 		std::bind(
-			&Port::analyzeTraffic,
+			&Port::savePDU,
 			this, port2,
 			std::placeholders::_1
 		)
