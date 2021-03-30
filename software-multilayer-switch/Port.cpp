@@ -3,14 +3,16 @@
 #include <functional>
 #include <exception>
 
-Port::Port(const std::string& name, const uint32_t& port_interface)
-	: inputTraffic_{ "input" }, outputTraffic_{ "output" }, name_{ name },
-	networkInterface_{ Tins::NetworkInterface::from_index(port_interface) }
+#include <QDebug>
+
+Port::Port(const std::string& friendlyName, const uint32_t& portInterface)
+	: inputTraffic_{ "input" }, outputTraffic_{ "output" }, friendlyName_{ friendlyName },
+	networkInterface_{ Tins::NetworkInterface::from_index(portInterface) }
 {
 }
 
 Port::Port(const Port& port) 
-	: inputTraffic_{ "input" }, outputTraffic_{ "output" }, name_{ port.name_ },
+	: inputTraffic_{ "input" }, outputTraffic_{ "output" }, friendlyName_{ port.friendlyName_ },
 	networkInterface_{ Tins::NetworkInterface::from_index(port.networkInterface_) }
 {
 }
@@ -28,7 +30,7 @@ void Port::clearIOStatistics()
 std::string Port::getPortStatistics()
 {
 	return
-		this->name_ + "\n\t" + this->inputTraffic_.getIOtype()
+		this->friendlyName_ + "\n\t" + this->inputTraffic_.getIOtype()
 		+ "\n\t\tEthernet II: " + std::to_string(this->inputTraffic_.getEthernetII())
 		+ "\n\t\tARP: " + std::to_string(this->inputTraffic_.getARP())
 		+ "\n\t\tIP: " + std::to_string(this->inputTraffic_.getIP())
@@ -52,9 +54,9 @@ Tins::NetworkInterface Port::getNetworkInterface_()
 	return this->networkInterface_;
 }
 
-std::string Port::getName()
+std::string Port::getFriendlyName()
 {
-	return this->name_;
+	return this->friendlyName_;
 }
 
 PortCounter& Port::getInputTraffic()
@@ -75,32 +77,24 @@ std::deque<Tins::PDU*>& Port::getBuffer()
 void Port::sendPDU(Port* port, Tins::PDU& pdu)
 {
 	Tins::PacketSender sender;
-	if (this->getName() == "port1")	
+	if (this->getFriendlyName() == "port1")	
 		sender.send(pdu, Tins::NetworkInterface::from_index(PORT2_INTERFACE));
 	else
 		sender.send(pdu, Tins::NetworkInterface::from_index(PORT1_INTERFACE));
 }
 
-bool Port::savePDU(Port* port2, Tins::PDU& pdu)
+bool Port::savePDU(Port* port, Tins::PDU& pdu)
 {
 	try
 	{
 		const Tins::EthernetII& eth = pdu.rfind_pdu<Tins::EthernetII>();
-
-		// std::lock_guard<std::mutex> lock(this->mutex_mtx);
 		this->bufferPDU_.push_front(&pdu);
-
 		this->getInputTraffic().incrementEthernetII();
-		port2->getOutputTraffic().incrementEthernetII();
+		port->getOutputTraffic().incrementEthernetII();
 	}
 	catch (const std::exception&)
 	{
-		//Tins::PacketSender sender;
-		//Tins::NetworkInterface iface = Tins::NetworkInterface::from_index(PORT1_INTERFACE);
-		//if (this->getName() == "port1")	iface = Tins::NetworkInterface::from_index(PORT2_INTERFACE);
-		//sender.send(pdu, iface);
-
-		this->sendPDU(port2, pdu);
+		this->sendPDU(port, pdu);
 		return true;
 	}
 
@@ -108,7 +102,7 @@ bool Port::savePDU(Port* port2, Tins::PDU& pdu)
 	{
 		const Tins::IP& ip = pdu.rfind_pdu<Tins::IP>();
 		this->getInputTraffic().incrementIP();
-		port2->getOutputTraffic().incrementIP();
+		port->getOutputTraffic().incrementIP();
 	}
 	catch (const std::exception&)
 	{
@@ -116,14 +110,13 @@ bool Port::savePDU(Port* port2, Tins::PDU& pdu)
 		{
 			const Tins::ARP& arp = pdu.rfind_pdu<Tins::ARP>();
 			this->getInputTraffic().incrementARP();
-			port2->getOutputTraffic().incrementARP();
-
-			this->sendPDU(port2, pdu);
+			port->getOutputTraffic().incrementARP();
+			this->sendPDU(port, pdu);
 			return true;
 		}
 		catch (const std::exception&)
 		{
-			this->sendPDU(port2, pdu);
+			this->sendPDU(port, pdu);
 			return true;
 		}
 	}
@@ -132,12 +125,12 @@ bool Port::savePDU(Port* port2, Tins::PDU& pdu)
 	{
 		const Tins::TCP& tcp = pdu.rfind_pdu<Tins::TCP>();
 		this->getInputTraffic().incrementTCP();
-		port2->getOutputTraffic().incrementTCP();
+		port->getOutputTraffic().incrementTCP();
 
 		if (tcp.dport() == 80 || tcp.sport() == 80)
 		{
 			this->getInputTraffic().incrementHTTP();
-			port2->getOutputTraffic().incrementHTTP();
+			port->getOutputTraffic().incrementHTTP();
 		}
 	}
 	catch (const std::exception&)
@@ -146,7 +139,7 @@ bool Port::savePDU(Port* port2, Tins::PDU& pdu)
 		{
 			const Tins::UDP& udp = pdu.rfind_pdu<Tins::UDP>();
 			this->getInputTraffic().incrementUDP();
-			port2->getOutputTraffic().incrementUDP();
+			port->getOutputTraffic().incrementUDP();
 		}
 		catch (const std::exception&)
 		{
@@ -154,23 +147,24 @@ bool Port::savePDU(Port* port2, Tins::PDU& pdu)
 			{
 				const Tins::ICMP& icmp = pdu.rfind_pdu<Tins::ICMP>();
 				this->getInputTraffic().incrementICMP();
-				port2->getOutputTraffic().incrementICMP();
+				port->getOutputTraffic().incrementICMP();
 			}
 			catch (const std::exception&)
 			{
-				this->sendPDU(port2, pdu);
+				this->sendPDU(port, pdu);
 				return true;
 			}
 		}
 	}
-	this->sendPDU(port2, pdu);
+	this->sendPDU(port, pdu);
 	return true;
 }
 
 void Port::captureTraffic(Port* port2)
 {
-	Tins::Sniffer sniffer(this->getNetworkInterface_().name());
 
+	Tins::Sniffer sniffer(this->getNetworkInterface_().name());
+	qDebug() << "Name: " << this->getNetworkInterface_().name().c_str() << '\n';
 	sniffer.sniff_loop(
 		std::bind(
 			&Port::savePDU,

@@ -1,9 +1,6 @@
 #include "MainWindow.hpp"
 #include "Port.hpp"
-
 #include <thread>
-//#include <QtCore>
-
 
 MainWindow::MainWindow(SwSwitch& swSwitch, QWidget *parent)
     : QMainWindow(parent), swSwitch_{ swSwitch }
@@ -32,28 +29,25 @@ void MainWindow::startButtonPressed()
     this->startButtonClicked_ = true;
     QPushButton* button = (QPushButton*)sender();
 
-    std::thread th1(&Port::captureTraffic, &this->swSwitch_.port1_, &this->swSwitch_.port2_);
-    std::thread th2(&Port::captureTraffic, &this->swSwitch_.port2_, &this->swSwitch_.port1_);
-    std::thread th3(&MainWindow::checkBuffer, this);
+    std::thread thread_port1(&Port::captureTraffic, &this->swSwitch_.port1_, &this->swSwitch_.port2_);
+    std::thread thread_port2(&Port::captureTraffic, &this->swSwitch_.port2_, &this->swSwitch_.port1_);
+    std::thread thread_port_buffer(&MainWindow::checkBuffer, this);
 	    
-    th1.detach();
-    th2.detach();
-    th3.detach();
+    thread_port1.detach();
+    thread_port2.detach();
+    thread_port_buffer.detach();
 }
 
 void MainWindow::clearButtonPressed()
 {
     if (!this->startButtonClicked_) 
         return;
-    // else this->startButtonClicked_ = false;
     QPushButton* button = (QPushButton*)sender();
 
     this->swSwitch_.port1_.clearIOStatistics();
     this->swSwitch_.port2_.clearIOStatistics();
 
     this->writePDU();
-/*	this->writeStatistics();
-    this->writeCAM_Table();  */      
 }
 
 void MainWindow::writePDU()

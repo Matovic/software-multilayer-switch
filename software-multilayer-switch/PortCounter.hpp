@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <mutex>
 
 class PortCounter
 {
@@ -29,7 +30,7 @@ public:
 
 private:
 	std::string IOtype_;
-
+	std::mutex mtx_;
 	size_t Ethernet_II_;
 	size_t ARP_;
 	size_t IP_;

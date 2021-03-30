@@ -1,7 +1,6 @@
 #include "MainWindow.hpp"
 #include "SwSwitch.hpp"
 #include "QThreadDisplayPDU.hpp"
-
 #include <QtWidgets/QApplication>
 
 int main(int argc, char* argv[])

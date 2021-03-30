@@ -88,6 +88,7 @@ void PortCounter::incrementHTTP()
 
 void PortCounter::clearStatistics()
 {
+	std::lock_guard<std::mutex> lock(this->mtx_);
 	this->Ethernet_II_ = 0;
 	this->ARP_ = 0;
 	this->IP_ = 0;
