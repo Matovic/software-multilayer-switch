@@ -62,12 +62,14 @@ void MainWindow::checkBuffer()
     {
         if (!this->swSwitch_.port1_.getBuffer().empty())
         {
+            this->swSwitch_.checkCAM(*this->swSwitch_.port1_.getBuffer()[0]);
             this->swSwitch_.port1_.getBuffer().pop_front();
             this->swSwitch_.displayQThread_.start();
         }
 
         if (!this->swSwitch_.port2_.getBuffer().empty())
         {
+            this->swSwitch_.checkCAM(*this->swSwitch_.port2_.getBuffer()[0]);
             this->swSwitch_.port2_.getBuffer().pop_front();
             this->swSwitch_.displayQThread_.start();
         }
@@ -82,7 +84,17 @@ void MainWindow::writeStatistics()
 
 std::string MainWindow::getCAM_Table()
 {
-	return "\tMAC\tPort\tTimer\n";
+    std::string strCamTable;
+    std::clock_t now = std::clock();
+    for (auto it = this->swSwitch_.camTable_.begin(); it != this->swSwitch_.camTable_.end(); ++it)
+    {
+        for (auto it2 = it->second.begin(); it2 != it->second.end(); ++it2)
+        {
+            std::string clock_str = std::to_string(30 - (now - it2->second) / CLOCKS_PER_SEC);
+            strCamTable += it->first.to_string() + "\t" + it2->first + "\t" + clock_str + "\n";
+        }
+    }
+    return ("\tMAC\tPort\tTimer\n" + strCamTable);
 }
 
 void MainWindow::writeCAM_Table()
