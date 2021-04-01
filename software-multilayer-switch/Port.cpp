@@ -7,13 +7,13 @@
 
 Port::Port(const std::string& friendlyName, const uint32_t& portInterface)
 	: inputTraffic_{ "input" }, outputTraffic_{ "output" }, friendlyName_{ friendlyName },
-	networkInterface_{ Tins::NetworkInterface::from_index(portInterface) }
+	networkInterface_{ Tins::NetworkInterface::from_index(portInterface) }, wait_{ false }//, ipAddr{}
 {
 }
 
 Port::Port(const Port& port) 
 	: inputTraffic_{ "input" }, outputTraffic_{ "output" }, friendlyName_{ port.friendlyName_ },
-	networkInterface_{ Tins::NetworkInterface::from_index(port.networkInterface_) }
+	networkInterface_{ Tins::NetworkInterface::from_index(port.networkInterface_) }, wait_{ false }
 {
 }
 
@@ -74,27 +74,31 @@ std::deque<Tins::PDU*>& Port::getBuffer()
 	return this->bufferPDU_;
 }
 
-void Port::sendPDU(Port* port, Tins::PDU& pdu)
-{
-	Tins::PacketSender sender;
-	if (this->getFriendlyName() == "port1")	
-		sender.send(pdu, Tins::NetworkInterface::from_index(PORT2_INTERFACE));
-	else
-		sender.send(pdu, Tins::NetworkInterface::from_index(PORT1_INTERFACE));
-}
+//void Port::sendPDU(Port* port, Tins::PDU& pdu)
+//{
+//	Tins::PacketSender sender;
+//	if (this->getFriendlyName() == "port1")	
+//		sender.send(pdu, Tins::NetworkInterface::from_index(PORT2_INTERFACE));
+//	else
+//		sender.send(pdu, Tins::NetworkInterface::from_index(PORT1_INTERFACE));
+//}
 
 bool Port::savePDU(Port* port, Tins::PDU& pdu)
 {
+	std::lock_guard<std::mutex> lock(this->mtx);
 	try
 	{
 		const Tins::EthernetII& eth = pdu.rfind_pdu<Tins::EthernetII>();
-		this->bufferPDU_.push_front(&pdu);
+		// std::lock_guard<std::mutex> lock(port->mtx);
+		this->bufferPDU_.push_back(&pdu);
+		this->wait_ = true;
 		this->getInputTraffic().incrementEthernetII();
 		port->getOutputTraffic().incrementEthernetII();
 	}
 	catch (const std::exception&)
 	{
-		this->sendPDU(port, pdu);
+		// this->sendPDU(port, pdu);
+		while (this->wait_);
 		return true;
 	}
 
@@ -111,12 +115,14 @@ bool Port::savePDU(Port* port, Tins::PDU& pdu)
 			const Tins::ARP& arp = pdu.rfind_pdu<Tins::ARP>();
 			this->getInputTraffic().incrementARP();
 			port->getOutputTraffic().incrementARP();
-			this->sendPDU(port, pdu);
+			// this->sendPDU(port, pdu);
+			while (this->wait_);
 			return true;
 		}
 		catch (const std::exception&)
 		{
-			this->sendPDU(port, pdu);
+			// this->sendPDU(port, pdu);
+			while (this->wait_);
 			return true;
 		}
 	}
@@ -151,12 +157,14 @@ bool Port::savePDU(Port* port, Tins::PDU& pdu)
 			}
 			catch (const std::exception&)
 			{
-				this->sendPDU(port, pdu);
+				// this->sendPDU(port, pdu);
+				while (this->wait_);
 				return true;
 			}
 		}
 	}
-	this->sendPDU(port, pdu);
+	// this->sendPDU(port, pdu);
+	while (this->wait_);
 	return true;
 }
 

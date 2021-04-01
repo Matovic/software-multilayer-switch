@@ -14,7 +14,7 @@ QThreadDisplayPDU::QThreadDisplayPDU(QThreadDisplayPDU& write) : m_stop{ write.m
 void QThreadDisplayPDU::run()
 {
 	// qDebug() << "From work thread: " << currentThreadId();
-	sleep(5);
+	sleep(1);
 }
 
 void QThreadDisplayPDU::stop()

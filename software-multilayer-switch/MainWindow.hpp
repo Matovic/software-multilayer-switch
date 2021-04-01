@@ -25,5 +25,6 @@ private:
 private slots:
     void startButtonPressed();
     void clearButtonPressed();
+    void setTimerButtonPressed();
     void writePDU();
 };

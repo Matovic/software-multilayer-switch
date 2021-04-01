@@ -2,6 +2,8 @@
 #include "Port.hpp"
 #include <thread>
 
+#include <tins/tins.h>
+
 MainWindow::MainWindow(SwSwitch& swSwitch, QWidget *parent)
     : QMainWindow(parent), swSwitch_{ swSwitch }
 {
@@ -9,17 +11,24 @@ MainWindow::MainWindow(SwSwitch& swSwitch, QWidget *parent)
 
     // start button
     QPushButton* QPushButton_startButton = MainWindow::findChild<QPushButton*>("startButton");
-    connect(QPushButton_startButton, SIGNAL(released()), this, SLOT(startButtonPressed()));
+    QObject::connect(QPushButton_startButton, SIGNAL(released()), this, SLOT(startButtonPressed()));
 
     // clear button
     QPushButton* QPushButton_closeButton = MainWindow::findChild<QPushButton*>("clearButton");
-    connect(QPushButton_closeButton, SIGNAL(released()), this, SLOT(clearButtonPressed()));
+    QObject::connect(QPushButton_closeButton, SIGNAL(released()), this, SLOT(clearButtonPressed()));
+
+    // setTimer btn
+    QPushButton* QPushButton_setTimerButton = MainWindow::findChild<QPushButton*>("setTimerButton");
+    QObject::connect(QPushButton_setTimerButton, SIGNAL(released()), this, SLOT(setTimerButtonPressed()));
+
+    // set line edit to accept only int values
+    this->ui.setTimerLineEdit->setValidator(new QIntValidator(this));
 
     // connect close button to stop a thread
-    connect(QPushButton_closeButton, SIGNAL(released()), &this->swSwitch_.displayQThread_, SLOT(stop()));
+    // QObject::connect(QPushButton_closeButton, SIGNAL(released()), &this->swSwitch_.displayQThread_, SLOT(stop()));
 
     // connect thread to a write PDU
-    connect(&this->swSwitch_.displayQThread_, SIGNAL(finished()), this, SLOT(writePDU()));
+    QObject::connect(&this->swSwitch_.displayQThread_, SIGNAL(finished()), this, SLOT(writePDU()));
 }
 
 void MainWindow::startButtonPressed()
@@ -32,10 +41,12 @@ void MainWindow::startButtonPressed()
     std::thread thread_port1(&Port::captureTraffic, &this->swSwitch_.port1_, &this->swSwitch_.port2_);
     std::thread thread_port2(&Port::captureTraffic, &this->swSwitch_.port2_, &this->swSwitch_.port1_);
     std::thread thread_port_buffer(&MainWindow::checkBuffer, this);
+    std::thread thread_cam(&SwSwitch::updateCAM, &this->swSwitch_);
 	    
     thread_port1.detach();
     thread_port2.detach();
     thread_port_buffer.detach();
+    thread_cam.detach();
 }
 
 void MainWindow::clearButtonPressed()
@@ -46,8 +57,22 @@ void MainWindow::clearButtonPressed()
 
     this->swSwitch_.port1_.clearIOStatistics();
     this->swSwitch_.port2_.clearIOStatistics();
+    this->swSwitch_.clearCAM();
 
     this->writePDU();
+}
+
+void MainWindow::setTimerButtonPressed()
+{
+    if (this->startButtonClicked_)
+        return;
+    QPushButton* button = (QPushButton*)sender();    
+    int timer = this->ui.setTimerLineEdit->text().toInt();
+    if (timer < 5)
+        return;
+    this->swSwitch_.initialSeconds_ = timer;
+    //qDebug() << "I AM HEREEEEEE\n" << this->swSwitch_.initialSeconds_ << '\n';
+
 }
 
 void MainWindow::writePDU()
@@ -62,16 +87,24 @@ void MainWindow::checkBuffer()
     {
         if (!this->swSwitch_.port1_.getBuffer().empty())
         {
-            this->swSwitch_.checkCAM(*this->swSwitch_.port1_.getBuffer()[0]);
-            this->swSwitch_.port1_.getBuffer().pop_front();
+            // std::lock_guard<std::mutex> lock(this->swSwitch_.port1_.mtx);
+            this->swSwitch_.port1_.wait_ = true;
+            this->swSwitch_.checkCAM(this->swSwitch_.port1_, *this->swSwitch_.port1_.getBuffer()[0]);
+            this->swSwitch_.port1_.getBuffer().pop_front(); 
+            this->swSwitch_.port1_.wait_ = false;
             this->swSwitch_.displayQThread_.start();
+            // this->swSwitch_.displayQThread_.quit();
         }
 
         if (!this->swSwitch_.port2_.getBuffer().empty())
         {
-            this->swSwitch_.checkCAM(*this->swSwitch_.port2_.getBuffer()[0]);
+            // std::lock_guard<std::mutex> lock(this->swSwitch_.port2_.mtx);
+            this->swSwitch_.port2_.wait_ = true;
+            this->swSwitch_.checkCAM(this->swSwitch_.port2_, *this->swSwitch_.port2_.getBuffer()[0]);
             this->swSwitch_.port2_.getBuffer().pop_front();
+            this->swSwitch_.port2_.wait_ = false;
             this->swSwitch_.displayQThread_.start();
+            // this->swSwitch_.displayQThread_.quit();
         }
     }
 }
@@ -85,13 +118,13 @@ void MainWindow::writeStatistics()
 std::string MainWindow::getCAM_Table()
 {
     std::string strCamTable;
-    std::clock_t now = std::clock();
+    // std::clock_t now = std::clock();
     for (auto it = this->swSwitch_.camTable_.begin(); it != this->swSwitch_.camTable_.end(); ++it)
     {
         for (auto it2 = it->second.begin(); it2 != it->second.end(); ++it2)
         {
-            std::string clock_str = std::to_string(30 - (now - it2->second) / CLOCKS_PER_SEC);
-            strCamTable += it->first.to_string() + "\t" + it2->first + "\t" + clock_str + "\n";
+            // std::string clock_str = std::to_string(this->swSwitch_.initialSeconds_ - (std::clock() - it2->second) / CLOCKS_PER_SEC);
+            strCamTable += it->first.to_string() + "\t" + it2->first + "\t" + std::to_string(it2->second) + "\n";
         }
     }
     return ("\tMAC\tPort\tTimer\n" + strCamTable);
