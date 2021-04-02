@@ -42,11 +42,13 @@ void MainWindow::startButtonPressed()
     std::thread thread_port2(&Port::captureTraffic, &this->swSwitch_.port2_, &this->swSwitch_.port1_);
     std::thread thread_port_buffer(&MainWindow::checkBuffer, this);
     std::thread thread_cam(&SwSwitch::updateCAM, &this->swSwitch_);
+    std::thread thread_loop(&SwSwitch::checkLoopbackProtocol, &this->swSwitch_);
 	    
     thread_port1.detach();
     thread_port2.detach();
     thread_port_buffer.detach();
     thread_cam.detach();
+    thread_loop.detach();
 }
 
 void MainWindow::clearButtonPressed()

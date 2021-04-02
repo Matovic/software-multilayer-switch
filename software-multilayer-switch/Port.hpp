@@ -24,6 +24,8 @@ const Tins::HWAddress<6> PORT1_MAC("02:00:4C:4F:4F:50");
 const Tins::HWAddress<6> PORT2_MAC("02:00:4C:4F:4F:50");
 
 
+static std::vector<uint> hashMap_;
+
 class Port
 {
 public:
@@ -41,10 +43,11 @@ public:
 	void captureTraffic(Port*);
 
 	std::mutex mtx;
+	int loopbackSeconds;
 	bool wait_;
 	//QHash<int, int> hashMap_;
 	//QCryptographicHash hashMap_{ QCryptographicHash::Md5 };
-	std::vector<uint> hashMap_;
+	//std::vector<uint> hashMap_;
 
 private:
 	Tins::NetworkInterface networkInterface_;

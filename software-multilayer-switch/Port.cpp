@@ -106,10 +106,12 @@ bool Port::savePDU(Port* port, Tins::PDU& pdu)
 	try
 	{
 		const Tins::EthernetII& eth = pdu.rfind_pdu<Tins::EthernetII>();
+
 		//auto hashValue = qHash(&eth, 69);
 		try
 		{
 			const Tins::Loopback& loopback = pdu.rfind_pdu<Tins::Loopback>();
+			this->loopbackSeconds = 0;
 			return true;
 		}
 		catch (const std::exception&)
@@ -153,8 +155,8 @@ bool Port::savePDU(Port* port, Tins::PDU& pdu)
 
 			uint hash_ = qHash(bufferSerialize, QCryptographicHash::Md5);
 
-			auto it = std::find(this->hashMap_.begin(), this->hashMap_.end(), hash_);
-			if (it != this->hashMap_.end())
+			auto it = std::find(/*this->*/hashMap_.begin(), /*this->*/hashMap_.end(), hash_);
+			if (it != /*this->*/hashMap_.end())
 			{
 				qDebug() << "ARP rovnaky" << this->friendlyName_.c_str() << " " << hash_ << '\n';
 				return true;
@@ -162,7 +164,7 @@ bool Port::savePDU(Port* port, Tins::PDU& pdu)
 			else
 			{
 				qDebug() << "ARP push back" << this->friendlyName_.c_str() << " " << hash_ << '\n';
-				this->hashMap_.push_back(hash_);
+				/*this->*/hashMap_.push_back(hash_);
 			}
 
 		/*	if (!this->getHash(hashValue))
@@ -211,6 +213,7 @@ bool Port::savePDU(Port* port, Tins::PDU& pdu)
 			{
 				const Tins::ICMP& icmp = pdu.rfind_pdu<Tins::ICMP>();
 				this->getInputTraffic().incrementICMP();
+				this->loopbackSeconds = 0;
 				port->getOutputTraffic().incrementICMP();
 
 				//hashValue += (std::to_string(icmp.code()) + std::to_string(icmp.checksum()) + std::to_string(icmp.id()) + std::to_string(icmp.sequence())).c_str();
@@ -231,8 +234,8 @@ bool Port::savePDU(Port* port, Tins::PDU& pdu)
 
 	uint hash_ = qHash(bufferSerialize, QCryptographicHash::Md5);
 
-	auto it = std::find(this->hashMap_.begin(), this->hashMap_.end(), hash_);
-	if (it != this->hashMap_.end())
+	auto it = std::find(/*this->*/hashMap_.begin(), /*this->*/hashMap_.end(), hash_);
+	if (it != /*this->*/hashMap_.end())
 	{
 		qDebug() << this->friendlyName_.c_str() << " " << hash_ << '\n';
 		//return false;
@@ -241,7 +244,7 @@ bool Port::savePDU(Port* port, Tins::PDU& pdu)
 	else
 	{
 		qDebug() << "push back "<<this->friendlyName_.c_str() << " " << hash_ << '\n';
-		this->hashMap_.push_back(hash_);
+		/*this->*/hashMap_.push_back(hash_);
 	}
 
 	this->bufferPDU_.push_back(pdu.clone());
@@ -251,8 +254,10 @@ bool Port::savePDU(Port* port, Tins::PDU& pdu)
 
 void Port::captureTraffic(Port* port2)
 {
-
-	Tins::Sniffer sniffer(this->getNetworkInterface_().name());
+	Tins::SnifferConfiguration config;
+	config.set_promisc_mode(true);
+	config.set_immediate_mode(true);
+	Tins::Sniffer sniffer(this->getNetworkInterface_().name(), config);
 	qDebug() << "Name: " << this->getNetworkInterface_().name().c_str() << '\n';
 	sniffer.sniff_loop(
 		std::bind(

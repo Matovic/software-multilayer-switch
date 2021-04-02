@@ -27,5 +27,6 @@ public:
     void checkCAM(Port&, Tins::PDU&);
     void clearCAM();
     void updateCAM();
+    void checkLoopbackProtocol();
 };
 

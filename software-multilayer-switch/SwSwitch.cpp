@@ -57,10 +57,10 @@ void SwSwitch::sendPDU(Port& port, Tins::PDU& pdu)
 	catch (std::exception&)
 	{
 		//qDebug() << "\tBUG\n";
-		if (port.getFriendlyName() == "port1")
-			sender.send(pdu, Tins::NetworkInterface::from_index(PORT2_INTERFACE));
-		else
-			sender.send(pdu, Tins::NetworkInterface::from_index(PORT1_INTERFACE));
+		//if (port.getFriendlyName() == "port1")
+		//	sender.send(pdu, Tins::NetworkInterface::from_index(PORT2_INTERFACE));
+		//else
+		//	sender.send(pdu, Tins::NetworkInterface::from_index(PORT1_INTERFACE));
 		return;
 	}
 }
@@ -124,6 +124,41 @@ void SwSwitch::updateCAM()
 			}
 			if (isIteratorErased)
 				break;
+		}
+	}
+}
+
+void SwSwitch::checkLoopbackProtocol()
+{
+	while (1)
+	{
+		// wait one second
+		std::clock_t start = std::clock();
+		while (((std::clock() - start) / CLOCKS_PER_SEC) < 1);
+		++this->port1_.loopbackSeconds;
+		++this->port2_.loopbackSeconds;
+		if (this->port1_.loopbackSeconds > 5)
+		{
+			for (auto it = this->camTable_.begin(); it != this->camTable_.end(); ++it)
+			{
+				if (it->second.begin()->first == this->port1_.getFriendlyName())
+				{
+					this->camTable_.erase(it);
+					break;
+				}
+			}
+		}
+
+		if (this->port2_.loopbackSeconds > 5)
+		{
+			for (auto it = this->camTable_.begin(); it != this->camTable_.end(); ++it)
+			{
+				if (it->second.begin()->first == this->port2_.getFriendlyName())
+				{
+					this->camTable_.erase(it);
+					break;
+				}
+			}
 		}
 	}
 }
