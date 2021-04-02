@@ -13,7 +13,8 @@
 
 // Qt
 //#include <QHash>
-#include <QCryptographicHash>
+#include <QCryptographicHash> 
+#include <QHash> 
 
 const uint32_t PORT1_INTERFACE = 12;
 const uint32_t PORT2_INTERFACE = 23;
@@ -43,7 +44,7 @@ public:
 	bool wait_;
 	//QHash<int, int> hashMap_;
 	//QCryptographicHash hashMap_{ QCryptographicHash::Md5 };
-	std::vector<QByteArray> hashMap_;
+	std::vector<uint> hashMap_;
 
 private:
 	Tins::NetworkInterface networkInterface_;
@@ -61,3 +62,11 @@ private:
 //{
 //	return qHash(value);
 //}
+
+inline uint qHash(const Tins::PDU::serialization_type& key, uint seed = 0)		//const std::vector<unsigned char>&
+{
+	if (key.empty())
+		return seed;
+	else
+		return qHashBits(&key.front(), key.size() * sizeof(int), seed);
+}

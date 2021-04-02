@@ -36,11 +36,15 @@ void SwSwitch::sendPDU(Port& port, Tins::PDU& pdu)
 		if (it != this->camTable_.end())
 		{
 			// Tins::EthernetII frame = Tins::EthernetII() / eth. IP() / TCP() / RawPDU("foo");
-			qDebug() << "Preposielanie: " << it->second.begin()->first.c_str() << " " << it->first.to_string().c_str() << '\n';
 			if (it->second.begin()->first == "port2")
+			{
+				qDebug() << "Preposielanie: " << it->second.begin()->first.c_str() << " " << it->first.to_string().c_str() << '\n';
 				sender.send(pdu, Tins::NetworkInterface::from_index(PORT2_INTERFACE));
+			}
 			else
+			{
 				sender.send(pdu, Tins::NetworkInterface::from_index(PORT1_INTERFACE));
+			}
 		}
 		else
 		{
