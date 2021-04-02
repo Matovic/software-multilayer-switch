@@ -6,9 +6,14 @@
 #include <string>
 #include <deque>
 #include <mutex>
+#include <vector>
 
 // libtins
 #include <tins/tins.h>
+
+// Qt
+//#include <QHash>
+#include <QCryptographicHash>
 
 const uint32_t PORT1_INTERFACE = 12;
 const uint32_t PORT2_INTERFACE = 23;
@@ -36,7 +41,9 @@ public:
 
 	std::mutex mtx;
 	bool wait_;
-	// Tins::IPv4Address ipAddr;
+	//QHash<int, int> hashMap_;
+	//QCryptographicHash hashMap_{ QCryptographicHash::Md5 };
+	std::vector<QByteArray> hashMap_;
 
 private:
 	Tins::NetworkInterface networkInterface_;
@@ -46,5 +53,11 @@ private:
 	PortCounter outputTraffic_;
 	std::deque<Tins::PDU*> bufferPDU_;
 	bool savePDU(Port*, Tins::PDU&);
+	bool getHash(QByteArray);
 	// void sendPDU(Port*, Tins::PDU&);
 };
+
+//inline uint qHash(Tins::PDU& value)
+//{
+//	return qHash(value);
+//}

@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <exception>
+#include <tins/loopback.h>
 
 #include <QDebug>
 
@@ -83,22 +84,59 @@ std::deque<Tins::PDU*>& Port::getBuffer()
 //		sender.send(pdu, Tins::NetworkInterface::from_index(PORT1_INTERFACE));
 //}
 
+bool Port::getHash(QByteArray hashValue)
+{
+	auto it = std::find(this->hashMap_.begin(), this->hashMap_.end(), hashValue);
+	if (it != this->hashMap_.end())
+	{
+		qDebug() << this->friendlyName_.c_str() << " " << hashValue << '\n';
+		return false;
+	}
+	else
+	{
+		this->hashMap_.push_back(hashValue);
+	}
+	//this->hashMap_.addData(hashValue);
+	//qDebug() << this->hashMap_.result() << '\n';
+	//if (this->hashMap_.contains(hashValue))
+	//{
+	//	qDebug() << this->hashMap_.key(hashValue) << '\n';
+	//	return true;
+	//}
+	//else
+	//{
+	//	this->hashMap_.addData(hashValue);
+	//}
+	return true;
+}
+
 bool Port::savePDU(Port* port, Tins::PDU& pdu)
 {
-	std::lock_guard<std::mutex> lock(this->mtx);
+	QByteArray hashValue;
 	try
 	{
 		const Tins::EthernetII& eth = pdu.rfind_pdu<Tins::EthernetII>();
-		// std::lock_guard<std::mutex> lock(port->mtx);
-		this->bufferPDU_.push_back(&pdu);
-		this->wait_ = true;
-		this->getInputTraffic().incrementEthernetII();
-		port->getOutputTraffic().incrementEthernetII();
+		//auto hashValue = qHash(&eth, 69);
+		try
+		{
+			const Tins::Loopback& loopback = pdu.rfind_pdu<Tins::Loopback>();
+			return true;
+		}
+		catch (const std::exception&)
+		{
+			//this->wait_ = true;
+			this->getInputTraffic().incrementEthernetII();
+			port->getOutputTraffic().incrementEthernetII();
+		}
+		hashValue += (eth.dst_addr().to_string() + eth.src_addr().to_string()).c_str();
+		//hashValue = QCryptographicHash::hash(QByteArray{ eth.dst_addr().to_string().c_str() }, QCryptographicHash::Md5);
+		//hashValue += QCryptographicHash::hash(QByteArray{ eth.src_addr().to_string().c_str() }, QCryptographicHash::Md5);
 	}
 	catch (const std::exception&)
 	{
 		// this->sendPDU(port, pdu);
-		while (this->wait_);
+		//while (this->wait_);
+		qDebug() << "Not EII: ";
 		return true;
 	}
 
@@ -107,6 +145,7 @@ bool Port::savePDU(Port* port, Tins::PDU& pdu)
 		const Tins::IP& ip = pdu.rfind_pdu<Tins::IP>();
 		this->getInputTraffic().incrementIP();
 		port->getOutputTraffic().incrementIP();
+		hashValue += (std::to_string(ip.id()) + std::to_string(ip.ttl()) + std::to_string(ip.checksum()) + ip.src_addr().to_string() + ip.dst_addr().to_string()).c_str();
 	}
 	catch (const std::exception&)
 	{
@@ -116,13 +155,21 @@ bool Port::savePDU(Port* port, Tins::PDU& pdu)
 			this->getInputTraffic().incrementARP();
 			port->getOutputTraffic().incrementARP();
 			// this->sendPDU(port, pdu);
-			while (this->wait_);
+			hashValue += (arp.sender_hw_addr().to_string() + arp.sender_ip_addr().to_string() + arp.target_hw_addr().to_string() 
+				+ arp.target_ip_addr().to_string() + std::to_string(arp.opcode())).c_str(); 
+			hashValue = QCryptographicHash::hash(hashValue, QCryptographicHash::Md5);
+
+			if (!this->getHash(hashValue))
+				return true;
+
+			this->bufferPDU_.push_back(pdu.clone());
+			//while (this->wait_);
 			return true;
 		}
 		catch (const std::exception&)
 		{
 			// this->sendPDU(port, pdu);
-			while (this->wait_);
+			//while (this->wait_);
 			return true;
 		}
 	}
@@ -132,6 +179,9 @@ bool Port::savePDU(Port* port, Tins::PDU& pdu)
 		const Tins::TCP& tcp = pdu.rfind_pdu<Tins::TCP>();
 		this->getInputTraffic().incrementTCP();
 		port->getOutputTraffic().incrementTCP();
+
+		hashValue += (std::to_string(tcp.dport()) + std::to_string(tcp.sport()) + std::to_string(tcp.seq()) + std::to_string(tcp.ack_seq()) + std::to_string(tcp.window())
+			+ std::to_string(tcp.checksum())).c_str();
 
 		if (tcp.dport() == 80 || tcp.sport() == 80)
 		{
@@ -146,6 +196,8 @@ bool Port::savePDU(Port* port, Tins::PDU& pdu)
 			const Tins::UDP& udp = pdu.rfind_pdu<Tins::UDP>();
 			this->getInputTraffic().incrementUDP();
 			port->getOutputTraffic().incrementUDP();
+
+			hashValue += (std::to_string(udp.dport()) + std::to_string(udp.sport()) + std::to_string(udp.length()) + std::to_string(udp.checksum())).c_str();
 		}
 		catch (const std::exception&)
 		{
@@ -154,17 +206,23 @@ bool Port::savePDU(Port* port, Tins::PDU& pdu)
 				const Tins::ICMP& icmp = pdu.rfind_pdu<Tins::ICMP>();
 				this->getInputTraffic().incrementICMP();
 				port->getOutputTraffic().incrementICMP();
+
+				hashValue += (std::to_string(icmp.code()) + std::to_string(icmp.checksum()) + std::to_string(icmp.id()) + std::to_string(icmp.sequence())).c_str();
 			}
 			catch (const std::exception&)
 			{
 				// this->sendPDU(port, pdu);
-				while (this->wait_);
+				//while (this->wait_);
 				return true;
 			}
 		}
 	}
 	// this->sendPDU(port, pdu);
-	while (this->wait_);
+	hashValue = QCryptographicHash::hash(hashValue, QCryptographicHash::Md5);
+	if (!this->getHash(hashValue))
+		return true;
+	this->bufferPDU_.push_back(pdu.clone());
+	//while (this->wait_);
 	return true;
 }
 

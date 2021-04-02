@@ -64,13 +64,16 @@ void MainWindow::clearButtonPressed()
 
 void MainWindow::setTimerButtonPressed()
 {
-    if (this->startButtonClicked_)
-        return;
+    //if (this->startButtonClicked_)
+    //    return;
     QPushButton* button = (QPushButton*)sender();    
     int timer = this->ui.setTimerLineEdit->text().toInt();
-    if (timer < 5)
+    if (timer < 1)
         return;
     this->swSwitch_.initialSeconds_ = timer;
+    //this->swSwitch_.initialSeconds_ = timer - (this->swSwitch_.originalSeconds_ - this->swSwitch_.initialSeconds_);
+    //if (this->swSwitch_.initialSeconds_ < 0)
+    //    this->swSwitch_.initialSeconds_ = 0;
     //qDebug() << "I AM HEREEEEEE\n" << this->swSwitch_.initialSeconds_ << '\n';
 
 }
@@ -88,22 +91,22 @@ void MainWindow::checkBuffer()
         if (!this->swSwitch_.port1_.getBuffer().empty())
         {
             // std::lock_guard<std::mutex> lock(this->swSwitch_.port1_.mtx);
-            this->swSwitch_.port1_.wait_ = true;
+            //this->swSwitch_.port1_.wait_ = true;
             this->swSwitch_.checkCAM(this->swSwitch_.port1_, *this->swSwitch_.port1_.getBuffer()[0]);
             this->swSwitch_.port1_.getBuffer().pop_front(); 
-            this->swSwitch_.port1_.wait_ = false;
-            this->swSwitch_.displayQThread_.start();
+            //this->swSwitch_.port1_.wait_ = false;
+            //this->swSwitch_.displayQThread_.start();
             // this->swSwitch_.displayQThread_.quit();
         }
 
         if (!this->swSwitch_.port2_.getBuffer().empty())
         {
             // std::lock_guard<std::mutex> lock(this->swSwitch_.port2_.mtx);
-            this->swSwitch_.port2_.wait_ = true;
+            //this->swSwitch_.port2_.wait_ = true;
             this->swSwitch_.checkCAM(this->swSwitch_.port2_, *this->swSwitch_.port2_.getBuffer()[0]);
             this->swSwitch_.port2_.getBuffer().pop_front();
-            this->swSwitch_.port2_.wait_ = false;
-            this->swSwitch_.displayQThread_.start();
+            //this->swSwitch_.port2_.wait_ = false;
+            //this->swSwitch_.displayQThread_.start();
             // this->swSwitch_.displayQThread_.quit();
         }
     }

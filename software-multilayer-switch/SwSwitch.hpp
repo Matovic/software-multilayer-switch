@@ -16,6 +16,7 @@ public:
     SwSwitch(SwSwitch& swSwitch);
     
     int initialSeconds_;
+    int originalSeconds_;
     Port port1_;
     Port port2_;
     QThreadDisplayPDU displayQThread_;

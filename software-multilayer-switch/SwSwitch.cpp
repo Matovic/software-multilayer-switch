@@ -2,17 +2,17 @@
 #include <ctime>
 
 SwSwitch::SwSwitch() 
-	: port1_{ "port1", PORT1_INTERFACE }, port2_{ "port2", PORT2_INTERFACE }, displayQThread_{ }, initialSeconds_{ 30 }
+	: port1_{ "port1", PORT1_INTERFACE }, port2_{ "port2", PORT2_INTERFACE }, displayQThread_{ }, initialSeconds_{ 30 }, originalSeconds_{ 30 }
 {
 }
 
 SwSwitch::SwSwitch(QThreadDisplayPDU& write) 
-	: port1_{ "port1", PORT1_INTERFACE }, port2_{ "port2", PORT2_INTERFACE }, displayQThread_{ write }, initialSeconds_{ 30 }
+	: port1_{ "port1", PORT1_INTERFACE }, port2_{ "port2", PORT2_INTERFACE }, displayQThread_{ write }, initialSeconds_{ 30 }, originalSeconds_{ 30 }
 {
 }
 
 SwSwitch::SwSwitch(SwSwitch& swSwitch) 
-	: port1_{ "port1", PORT1_INTERFACE }, port2_{ "port2", PORT2_INTERFACE }, displayQThread_{ swSwitch.displayQThread_ }, initialSeconds_{ 30 }
+	: port1_{ "port1", PORT1_INTERFACE }, port2_{ "port2", PORT2_INTERFACE }, displayQThread_{ swSwitch.displayQThread_ }, initialSeconds_{ 30 }, originalSeconds_{ 30 }
 {
 }
 
@@ -36,7 +36,7 @@ void SwSwitch::sendPDU(Port& port, Tins::PDU& pdu)
 		if (it != this->camTable_.end())
 		{
 			// Tins::EthernetII frame = Tins::EthernetII() / eth. IP() / TCP() / RawPDU("foo");
-			//qDebug() << "Preposielanie na port: " << it->second.begin()->first.c_str() << '\n';
+			qDebug() << "Preposielanie: " << it->second.begin()->first.c_str() << " " << it->first.to_string().c_str() << '\n';
 			if (it->second.begin()->first == "port2")
 				sender.send(pdu, Tins::NetworkInterface::from_index(PORT2_INTERFACE));
 			else
@@ -85,7 +85,7 @@ void SwSwitch::checkCAM(Port& port, Tins::PDU& pdu)
 	catch (const std::exception&)
 	{
 		// std::lock_guard<std::mutex> lock(this->mtx);
-		this->sendPDU(port, pdu);
+		//this->sendPDU(port, pdu);
 		return;
 	}
 }
@@ -103,6 +103,8 @@ void SwSwitch::updateCAM()
 
 		std::clock_t start = std::clock();
 		while (((std::clock() - start) / CLOCKS_PER_SEC) < 1);
+		this->displayQThread_.start();
+		this->displayQThread_.quit();
 		for (auto it = this->camTable_.begin(); it != this->camTable_.end(); ++it)
 		{
 			bool isIteratorErased = false;
@@ -115,7 +117,6 @@ void SwSwitch::updateCAM()
 					isIteratorErased = true;
 					break;
 				}
-				
 			}
 			if (isIteratorErased)
 				break;
