@@ -21,7 +21,11 @@ MainWindow::MainWindow(SwSwitch& swSwitch, QWidget *parent)
     QPushButton* QPushButton_setTimerButton = MainWindow::findChild<QPushButton*>("setTimerButton");
     QObject::connect(QPushButton_setTimerButton, SIGNAL(released()), this, SLOT(setTimerButtonPressed()));
 
-    // set line edit to accept only int values
+    // setFilter btn
+    QPushButton* QPushButton_setFilterButton = MainWindow::findChild<QPushButton*>("filterSetButton");
+    QObject::connect(QPushButton_setFilterButton, SIGNAL(released()), this, SLOT(setFiltersButtonPressed()));
+
+    // set timer line edit to accept only int values
     this->ui.setTimerLineEdit->setValidator(new QIntValidator(this));
 
     // connect close button to stop a thread
@@ -78,6 +82,39 @@ void MainWindow::setTimerButtonPressed()
     //    this->swSwitch_.initialSeconds_ = 0;
     //qDebug() << "I AM HEREEEEEE\n" << this->swSwitch_.initialSeconds_ << '\n';
 
+}
+
+
+void MainWindow::setFiltersButtonPressed()
+{
+    QPushButton* button = (QPushButton*)sender();
+    std::string
+        filter_direction = this->ui.filterIOLineEdit->text().toStdString(),
+        filter_protocol = this->ui.filterProtocolLineEdit->text().toStdString(),
+        filter_port = this->ui.filterSetPortLineEdit->text().toStdString(),
+        filter_ip_add = this->ui.filterSetIPLineEdit->text().toStdString(),
+        filter_mac_add = this->ui.filterSetMACLineEdit->text().toStdString(),
+        filter_permit_deny = this->ui.filterPermitDenyLineEdit->text().toStdString();
+    
+    //// find
+    //std::size_t
+    //    filter_http = filter_protocol.find("http"),
+    //    filter_icmp = filter_protocol.find("icmp"),
+    //    filter_tcp = filter_protocol.find("tcp"),
+    //    filter_udp = filter_protocol.find("udp"),
+    //    filter_ip = filter_protocol.find("ip"),
+    //    filter_arp = filter_protocol.find("arp");
+
+    qDebug()
+        << filter_direction.c_str() << ' '
+        << filter_protocol.c_str() << ' '
+        << filter_port.c_str() << ' '
+        << filter_ip_add.c_str() << ' '
+        << filter_mac_add.c_str() << ' '
+        << filter_permit_deny.c_str() << '\n';
+
+    this->swSwitch_.port1_.setFilter_ = true;
+    this->swSwitch_.port2_.setFilter_ = true;
 }
 
 void MainWindow::writePDU()

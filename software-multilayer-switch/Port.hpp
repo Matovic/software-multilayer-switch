@@ -16,8 +16,8 @@
 #include <QCryptographicHash> 
 #include <QHash> 
 
-const uint32_t PORT1_INTERFACE = 12;
-const uint32_t PORT2_INTERFACE = 23;
+const uint32_t PORT1_INTERFACE = 11;
+const uint32_t PORT2_INTERFACE = 21;
 const std::string PORT1_IP("192.168.100.254");
 const std::string PORT2_IP("192.168.100.253");
 const Tins::HWAddress<6> PORT1_MAC("02:00:4C:4F:4F:50");
@@ -42,9 +42,13 @@ public:
 	std::deque<Tins::PDU*>& getBuffer();
 	void captureTraffic(Port*);
 
+	void changeConfig();
+
 	std::mutex mtx;
 	int loopbackSeconds;
 	bool wait_;
+	bool setFilter_;
+	Tins::SnifferConfiguration config_;
 	//QHash<int, int> hashMap_;
 	//QCryptographicHash hashMap_{ QCryptographicHash::Md5 };
 	//std::vector<uint> hashMap_;

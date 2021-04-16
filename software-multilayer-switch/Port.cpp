@@ -8,14 +8,18 @@
 
 Port::Port(const std::string& friendlyName, const uint32_t& portInterface)
 	: inputTraffic_{ "input" }, outputTraffic_{ "output" }, friendlyName_{ friendlyName },
-	networkInterface_{ Tins::NetworkInterface::from_index(portInterface) }, wait_{ false }//, ipAddr{}
+	networkInterface_{ Tins::NetworkInterface::from_index(portInterface) }, wait_{ false }, setFilter_{ false }
 {
+	config_.set_promisc_mode(true);
+	config_.set_immediate_mode(true);
 }
 
 Port::Port(const Port& port) 
 	: inputTraffic_{ "input" }, outputTraffic_{ "output" }, friendlyName_{ port.friendlyName_ },
-	networkInterface_{ Tins::NetworkInterface::from_index(port.networkInterface_) }, wait_{ false }
+	networkInterface_{ Tins::NetworkInterface::from_index(port.networkInterface_) }, wait_{ false }, setFilter_{ false }
 {
+	config_.set_promisc_mode(true);
+	config_.set_immediate_mode(true);
 }
 
 Port::~Port()
@@ -102,6 +106,12 @@ std::deque<Tins::PDU*>& Port::getBuffer()
 
 bool Port::savePDU(Port* port, Tins::PDU& pdu)
 {
+	if (this->setFilter_)
+	{
+		qDebug() << "set filters!\n";
+		return false;
+	}
+
 	//QByteArray hashValue;
 	try
 	{
@@ -253,11 +263,11 @@ bool Port::savePDU(Port* port, Tins::PDU& pdu)
 }
 
 void Port::captureTraffic(Port* port2)
-{
+{/*
 	Tins::SnifferConfiguration config;
 	config.set_promisc_mode(true);
-	config.set_immediate_mode(true);
-	Tins::Sniffer sniffer(this->getNetworkInterface_().name(), config);
+	config.set_immediate_mode(true);*/
+	Tins::Sniffer sniffer(this->getNetworkInterface_().name(), this->config_);
 	qDebug() << "Name: " << this->getNetworkInterface_().name().c_str() << '\n';
 	sniffer.sniff_loop(
 		std::bind(
@@ -266,4 +276,11 @@ void Port::captureTraffic(Port* port2)
 			std::placeholders::_1
 		)
 	);
+
+	if (this->setFilter_)
+	{
+		this->setFilter_ = false;
+		qDebug() << "woala!\n";
+		this->captureTraffic(port2);
+	}
 }

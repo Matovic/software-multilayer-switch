@@ -26,5 +26,6 @@ private slots:
     void startButtonPressed();
     void clearButtonPressed();
     void setTimerButtonPressed();
+    void setFiltersButtonPressed();
     void writePDU();
 };
