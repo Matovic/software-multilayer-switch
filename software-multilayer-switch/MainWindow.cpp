@@ -46,13 +46,13 @@ void MainWindow::startButtonPressed()
     std::thread thread_port2(&Port::captureTraffic, &this->swSwitch_.port2_, &this->swSwitch_.port1_);
     std::thread thread_port_buffer(&MainWindow::checkBuffer, this);
     std::thread thread_cam(&SwSwitch::updateCAM, &this->swSwitch_);
-    std::thread thread_loop(&SwSwitch::checkLoopbackProtocol, &this->swSwitch_);
+    //std::thread thread_loop(&SwSwitch::checkLoopbackProtocol, &this->swSwitch_);
 	    
     thread_port1.detach();
     thread_port2.detach();
     thread_port_buffer.detach();
     thread_cam.detach();
-    thread_loop.detach();
+    //thread_loop.detach();
 }
 
 void MainWindow::clearButtonPressed()
@@ -70,51 +70,148 @@ void MainWindow::clearButtonPressed()
 
 void MainWindow::setTimerButtonPressed()
 {
-    //if (this->startButtonClicked_)
-    //    return;
     QPushButton* button = (QPushButton*)sender();    
     int timer = this->ui.setTimerLineEdit->text().toInt();
     if (timer < 1)
         return;
     this->swSwitch_.initialSeconds_ = timer;
-    //this->swSwitch_.initialSeconds_ = timer - (this->swSwitch_.originalSeconds_ - this->swSwitch_.initialSeconds_);
-    //if (this->swSwitch_.initialSeconds_ < 0)
-    //    this->swSwitch_.initialSeconds_ = 0;
-    //qDebug() << "I AM HEREEEEEE\n" << this->swSwitch_.initialSeconds_ << '\n';
-
 }
 
 
 void MainWindow::setFiltersButtonPressed()
 {
     QPushButton* button = (QPushButton*)sender();
+
+    // clear everything
+    this->swSwitch_.port1_.port_number_ = 0;
+    this->swSwitch_.port2_.port_number_ = 0;
+
+    // get port number
+    int i_port_number = this->ui.filterSetPortLineEdit->text().toInt();
+    if (i_port_number == 1)
+        this->swSwitch_.port1_.port_number_ = 1;
+    else if (i_port_number == 2)
+        this->swSwitch_.port2_.port_number_ = 2;
+
+    // get another filter parameters
     std::string
         filter_direction = this->ui.filterIOLineEdit->text().toStdString(),
-        filter_protocol = this->ui.filterProtocolLineEdit->text().toStdString(),
-        filter_port = this->ui.filterSetPortLineEdit->text().toStdString(),
-        filter_ip_add = this->ui.filterSetIPLineEdit->text().toStdString(),
-        filter_mac_add = this->ui.filterSetMACLineEdit->text().toStdString(),
         filter_permit_deny = this->ui.filterPermitDenyLineEdit->text().toStdString();
-    
-    //// find
-    //std::size_t
-    //    filter_http = filter_protocol.find("http"),
-    //    filter_icmp = filter_protocol.find("icmp"),
-    //    filter_tcp = filter_protocol.find("tcp"),
-    //    filter_udp = filter_protocol.find("udp"),
-    //    filter_ip = filter_protocol.find("ip"),
-    //    filter_arp = filter_protocol.find("arp");
+    if (filter_permit_deny == "deny")
+    {
+        this->swSwitch_.port1_.b_filter_deny = true;
+        this->swSwitch_.port2_.b_filter_deny = true;
+    }
+    else
+    {
+        this->swSwitch_.port1_.b_filter_deny = false;
+        this->swSwitch_.port2_.b_filter_deny = false;
+    }
+
+    if (filter_direction == "out")
+    {
+        this->swSwitch_.port1_.b_filter_out = true;
+        this->swSwitch_.port2_.b_filter_out = true;
+    }
+    else
+    {
+        this->swSwitch_.port1_.b_filter_out = false;
+        this->swSwitch_.port2_.b_filter_out = false;
+    }
+
+    this->swSwitch_.port1_.filter_src_ip_add_ = this->ui.filterSetIPLineEdit->text().toStdString();
+    this->swSwitch_.port1_.filter_src_mac_add_ = this->ui.filterSetMACLineEdit->text().toStdString();
+    this->swSwitch_.port1_.filter_dst_ip_add_ = this->ui.filterSetIPLineEdit->text().toStdString();
+    this->swSwitch_.port1_.filter_dst_mac_add_ = this->ui.filterSetMACLineEdit->text().toStdString();
+
+    this->swSwitch_.port2_.filter_src_ip_add_ = this->ui.filterSetIPLineEdit->text().toStdString();
+    this->swSwitch_.port2_.filter_src_mac_add_ = this->ui.filterSetMACLineEdit->text().toStdString();
+    this->swSwitch_.port2_.filter_dst_ip_add_ = this->ui.filterSetIPLineEdit->text().toStdString();
+    this->swSwitch_.port2_.filter_dst_mac_add_ = this->ui.filterSetMACLineEdit->text().toStdString();
+
+    // find protocols
+    std::string filter_protocol = this->ui.filterProtocolLineEdit->text().toStdString();
+    if (filter_protocol.find("http") != std::string::npos)
+    {
+        this->swSwitch_.port1_.b_http_ = true;
+        this->swSwitch_.port2_.b_http_ = true;
+    }
+    else
+    {
+        this->swSwitch_.port1_.b_http_ = false;
+        this->swSwitch_.port2_.b_http_ = false;
+    }
+
+    if (filter_protocol.find("icmp") != std::string::npos)
+    {
+        this->swSwitch_.port1_.b_icmp_ = true;
+        this->swSwitch_.port2_.b_icmp_ = true;
+    }
+    else
+    {
+        this->swSwitch_.port1_.b_icmp_ = false;
+        this->swSwitch_.port2_.b_icmp_ = false;
+    }
+
+    if (filter_protocol.find("tcp") != std::string::npos)
+    {
+        this->swSwitch_.port1_.b_tcp_ = true;
+        this->swSwitch_.port2_.b_tcp_ = true;
+    }
+    else
+    {
+        this->swSwitch_.port1_.b_tcp_ = false;
+        this->swSwitch_.port2_.b_tcp_ = false;
+    }
+
+    if (filter_protocol.find("udp") != std::string::npos)
+    {
+        this->swSwitch_.port1_.b_udp_ = true;
+        this->swSwitch_.port2_.b_udp_ = true;
+    }
+    else
+    {
+        this->swSwitch_.port1_.b_udp_ = false;
+        this->swSwitch_.port2_.b_udp_ = false;
+    }
+
+    if (filter_protocol.find("ip") != std::string::npos)
+    {
+        this->swSwitch_.port1_.b_ip_ = true;
+        this->swSwitch_.port2_.b_ip_ = true;
+    }
+    else
+    {
+        this->swSwitch_.port1_.b_ip_ = false;
+        this->swSwitch_.port2_.b_ip_ = false;
+    }
+
+    if (filter_protocol.find("arp") != std::string::npos)
+    {
+        this->swSwitch_.port1_.b_arp_ = true;
+        this->swSwitch_.port2_.b_arp_ = true;
+    }
+    else
+    {
+        this->swSwitch_.port1_.b_arp_ = false;
+        this->swSwitch_.port2_.b_arp_ = false;
+    }
 
     qDebug()
-        << filter_direction.c_str() << ' '
-        << filter_protocol.c_str() << ' '
-        << filter_port.c_str() << ' '
-        << filter_ip_add.c_str() << ' '
-        << filter_mac_add.c_str() << ' '
-        << filter_permit_deny.c_str() << '\n';
+        << "HTTP"  << ' ' << this->swSwitch_.port1_.b_http_  << '\n'
+        << "ICMP"  << ' ' << this->swSwitch_.port1_.b_icmp_  << '\n'
+        << "TCP"   << ' ' << this->swSwitch_.port1_.b_tcp_   << '\n'
+        << "UDP"   << ' ' << this->swSwitch_.port1_.b_udp_   << '\n'
+        << "IP"    << ' ' << this->swSwitch_.port1_.b_ip_    << '\n'
+        << "ARP"   << ' ' << this->swSwitch_.port1_.b_arp_   << '\n';
 
-    this->swSwitch_.port1_.setFilter_ = true;
-    this->swSwitch_.port2_.setFilter_ = true;
+    qDebug()
+        << this->swSwitch_.port1_.b_filter_out << ' '
+        << filter_protocol.c_str() << ' '
+        << this->swSwitch_.port1_.port_number_ << ' '
+        << this->swSwitch_.port1_.filter_src_ip_add_.c_str() << ' '
+        << this->swSwitch_.port1_.filter_src_mac_add_.c_str() << ' '
+        << this->swSwitch_.port1_.b_filter_deny << '\n';
 }
 
 void MainWindow::writePDU()

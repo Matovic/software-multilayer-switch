@@ -18,24 +18,45 @@ SwSwitch::SwSwitch(SwSwitch& swSwitch)
 
 void SwSwitch::sendPDU(Port& port, Tins::PDU& pdu)
 {
+	// filter set to deny everything
+	if (port.port_number_ != 0 && port.b_filter_deny && 
+		(port.filter_src_ip_add_ == "any" || port.filter_src_mac_add_ == "any" || port.filter_dst_ip_add_ == "any" || port.filter_dst_mac_add_ == "any"))
+	{
+		return;
+	}
+
 	Tins::PacketSender sender;
 	try
 	{
-	//Tins::IP* ip = pdu.find_pdu<Tins::IP>();
-	//if (port.getFriendlyName() == "port1" && ip)
-	//{
-	//	//ip->dst_addr().to_string()
-	//	//if (ip->dst_addr().to_string() == PORT1_IP)
-	//	//	qDebug() << ip->dst_addr().to_string().c_str() << " == " << PORT1_IP.c_str() << '\n';
-	//	//else
-	//	//	qDebug() << ip->dst_addr().to_string().c_str() << " != " << PORT1_IP.c_str() << '\n';
-	//}
 		const Tins::EthernetII& eth = pdu.rfind_pdu<Tins::EthernetII>();
 		Tins::HWAddress<6> dst_addr = eth.dst_addr();
+		Tins::HWAddress<6> src_addr = eth.src_addr();
+
+		if (port.port_number_ != 0 && port.b_filter_deny && 
+			(dst_addr.to_string() == port.filter_dst_mac_add_ || src_addr.to_string() == port.filter_src_mac_add_))
+		{
+			return;
+		}
+		try
+		{
+			const Tins::IP& ip = pdu.rfind_pdu<Tins::IP>();
+			Tins::IPv4Address src_ip = ip.src_addr();
+			Tins::IPv4Address dst_ip = ip.dst_addr();
+
+			if (port.port_number_ != 0 && port.b_filter_deny && 
+				(src_ip.to_string() == port.filter_src_ip_add_ || dst_ip.to_string() == port.filter_dst_ip_add_))
+			{
+				return;
+			}
+		}
+		catch (std::exception&)
+		{
+			qDebug() << "\tcatch\n";
+		}
+
 		auto it = this->camTable_.find(dst_addr);
 		if (it != this->camTable_.end())
 		{
-			// Tins::EthernetII frame = Tins::EthernetII() / eth. IP() / TCP() / RawPDU("foo");
 			if (it->second.begin()->first == "port2")
 			{
 				qDebug() << "Preposielanie: " << it->second.begin()->first.c_str() << " " << it->first.to_string().c_str() << '\n';
@@ -56,11 +77,6 @@ void SwSwitch::sendPDU(Port& port, Tins::PDU& pdu)
 	}
 	catch (std::exception&)
 	{
-		//qDebug() << "\tBUG\n";
-		//if (port.getFriendlyName() == "port1")
-		//	sender.send(pdu, Tins::NetworkInterface::from_index(PORT2_INTERFACE));
-		//else
-		//	sender.send(pdu, Tins::NetworkInterface::from_index(PORT1_INTERFACE));
 		return;
 	}
 }
@@ -103,7 +119,7 @@ void SwSwitch::updateCAM()
 {
 	while (1)
 	{
-		if (this->camTable_.empty()) continue;
+		// if (this->camTable_.empty()) continue;
 
 		std::clock_t start = std::clock();
 		while (((std::clock() - start) / CLOCKS_PER_SEC) < 1);

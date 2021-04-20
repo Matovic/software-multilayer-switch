@@ -8,7 +8,8 @@
 
 Port::Port(const std::string& friendlyName, const uint32_t& portInterface)
 	: inputTraffic_{ "input" }, outputTraffic_{ "output" }, friendlyName_{ friendlyName },
-	networkInterface_{ Tins::NetworkInterface::from_index(portInterface) }, wait_{ false }, setFilter_{ false }
+	networkInterface_{ Tins::NetworkInterface::from_index(portInterface) }, wait_{ false }, b_filter_protocol_{ false }, 
+	b_http_{ false }, b_icmp_{ false }, b_tcp_{ false }, b_udp_{ false }, b_ip_{ false }, b_arp_{ false }, port_number_{ 0 }
 {
 	config_.set_promisc_mode(true);
 	config_.set_immediate_mode(true);
@@ -16,7 +17,8 @@ Port::Port(const std::string& friendlyName, const uint32_t& portInterface)
 
 Port::Port(const Port& port) 
 	: inputTraffic_{ "input" }, outputTraffic_{ "output" }, friendlyName_{ port.friendlyName_ },
-	networkInterface_{ Tins::NetworkInterface::from_index(port.networkInterface_) }, wait_{ false }, setFilter_{ false }
+	networkInterface_{ Tins::NetworkInterface::from_index(port.networkInterface_) }, wait_{ false }, b_filter_protocol_{ false },
+	b_http_{ false }, b_icmp_{ false }, b_tcp_{ false }, b_udp_{ false }, b_ip_{ false }, b_arp_{ false }, port_number_{ 0 }
 {
 	config_.set_promisc_mode(true);
 	config_.set_immediate_mode(true);
@@ -79,45 +81,16 @@ std::deque<Tins::PDU*>& Port::getBuffer()
 	return this->bufferPDU_;
 }
 
-//void Port::sendPDU(Port* port, Tins::PDU& pdu)
-//{
-//	Tins::PacketSender sender;
-//	if (this->getFriendlyName() == "port1")	
-//		sender.send(pdu, Tins::NetworkInterface::from_index(PORT2_INTERFACE));
-//	else
-//		sender.send(pdu, Tins::NetworkInterface::from_index(PORT1_INTERFACE));
-//}
-
-//bool Port::getHash(QByteArray hashValue)
-//{
-//	auto it = std::find(this->hashMap_.begin(), this->hashMap_.end(), hashValue);
-//	if (it != this->hashMap_.end())
-//	{
-//		//qDebug() << this->friendlyName_.c_str() << " " << hashValue << '\n';
-//		return false;
-//	}
-//	else
-//	{
-//		// this->hashMap_.push_back(hashValue);
-//	}
-//
-//	return true;
-//}
-
 bool Port::savePDU(Port* port, Tins::PDU& pdu)
 {
-	if (this->setFilter_)
+	/*if (this->b_filter_protocol_)
 	{
 		qDebug() << "set filters!\n";
 		return false;
-	}
-
-	//QByteArray hashValue;
+	}*/
 	try
 	{
 		const Tins::EthernetII& eth = pdu.rfind_pdu<Tins::EthernetII>();
-
-		//auto hashValue = qHash(&eth, 69);
 		try
 		{
 			const Tins::Loopback& loopback = pdu.rfind_pdu<Tins::Loopback>();
@@ -126,47 +99,56 @@ bool Port::savePDU(Port* port, Tins::PDU& pdu)
 		}
 		catch (const std::exception&)
 		{
-			//this->wait_ = true;
 			this->getInputTraffic().incrementEthernetII();
-			port->getOutputTraffic().incrementEthernetII();
+			if (this->port_number_ != 0 && !this->b_filter_deny)
+				port->getOutputTraffic().incrementEthernetII();
 		}
-		//hashValue += (eth.dst_addr().to_string() + eth.src_addr().to_string()).c_str();
-		
-		//hashValue = QCryptographicHash::hash(QByteArray{ eth.dst_addr().to_string().c_str() }, QCryptographicHash::Md5);
-		//hashValue += QCryptographicHash::hash(QByteArray{ eth.src_addr().to_string().c_str() }, QCryptographicHash::Md5);
 	}
 	catch (const std::exception&)
 	{
-		// this->sendPDU(port, pdu);
-		//while (this->wait_);
-		//qDebug() << "Not EII: ";
 		return true;
 	}
-
 	try
 	{
 		const Tins::IP& ip = pdu.rfind_pdu<Tins::IP>();
+		if (this->port_number_ != 0 && this->b_filter_deny && this->b_ip_)
+		{
+			if (this->b_filter_out)
+				this->getInputTraffic().incrementIP();
+			qDebug() << "\tIP\n";
+			return true;
+		}
+		else if(this->port_number_ != 0 && !this->b_filter_deny && !this->b_ip_)
+		{
+			return true;
+		}
 		this->getInputTraffic().incrementIP();
 		port->getOutputTraffic().incrementIP();
-		//hashValue += (std::to_string(ip.id()) + std::to_string(ip.ttl()) + std::to_string(ip.checksum()) + ip.src_addr().to_string() + ip.dst_addr().to_string()).c_str();
 	}
 	catch (const std::exception&)
 	{
 		try
 		{
 			const Tins::ARP& arp = pdu.rfind_pdu<Tins::ARP>();
+			if (this->port_number_ != 0 && this->b_filter_deny && this->b_arp_)
+			{
+				if (this->b_filter_out)
+					this->getInputTraffic().incrementARP();
+				qDebug() << "\tARP\n";
+				return true;
+			}
+			else if (this->port_number_ != 0 && !this->b_filter_deny && !this->b_arp_)
+			{
+				return true;
+			}
 			this->getInputTraffic().incrementARP();
 			port->getOutputTraffic().incrementARP();
-			// this->sendPDU(port, pdu);
-			//hashValue += (arp.sender_hw_addr().to_string() + arp.sender_ip_addr().to_string() + arp.target_hw_addr().to_string() 
-				//+ arp.target_ip_addr().to_string() + std::to_string(arp.opcode())).c_str(); 
 
 			auto bufferSerialize = pdu.serialize();
-
 			uint hash_ = qHash(bufferSerialize, QCryptographicHash::Md5);
 
-			auto it = std::find(/*this->*/hashMap_.begin(), /*this->*/hashMap_.end(), hash_);
-			if (it != /*this->*/hashMap_.end())
+			auto it = std::find(hashMap_.begin(), hashMap_.end(), hash_);
+			if (it != hashMap_.end())
 			{
 				qDebug() << "ARP rovnaky" << this->friendlyName_.c_str() << " " << hash_ << '\n';
 				return true;
@@ -174,35 +156,46 @@ bool Port::savePDU(Port* port, Tins::PDU& pdu)
 			else
 			{
 				qDebug() << "ARP push back" << this->friendlyName_.c_str() << " " << hash_ << '\n';
-				/*this->*/hashMap_.push_back(hash_);
+				hashMap_.push_back(hash_);
 			}
-
-		/*	if (!this->getHash(hashValue))
-				return true;*/
-
 			this->bufferPDU_.push_back(pdu.clone());
-			//while (this->wait_);
 			return true;
 		}
 		catch (const std::exception&)
 		{
-			// this->sendPDU(port, pdu);
-			//while (this->wait_);
 			return true;
 		}
 	}
-
 	try
 	{
 		const Tins::TCP& tcp = pdu.rfind_pdu<Tins::TCP>();
+		if (this->port_number_ != 0 && this->b_filter_deny && this->b_tcp_)
+		{
+			if (this->b_filter_out)		
+				this->getInputTraffic().incrementTCP();
+			qDebug() << "\tTCP\n";
+			return true;
+		}
+		else if (this->port_number_ != 0 && !this->b_filter_deny && !this->b_tcp_)
+		{
+			return true;
+		}
 		this->getInputTraffic().incrementTCP();
 		port->getOutputTraffic().incrementTCP();
 
-	/*	hashValue += (std::to_string(tcp.dport()) + std::to_string(tcp.sport()) + std::to_string(tcp.seq()) + std::to_string(tcp.ack_seq()) + std::to_string(tcp.window())
-			+ std::to_string(tcp.checksum())).c_str();*/
-
 		if (tcp.dport() == 80 || tcp.sport() == 80)
 		{
+			if (this->port_number_ != 0 && this->b_filter_deny && this->b_http_)
+			{
+				if (this->b_filter_out)
+					this->getInputTraffic().incrementHTTP();
+				qDebug() << "\tHTTP\n";
+				return true;
+			}
+			else if (this->port_number_ != 0 && !this->b_filter_deny && !this->b_http_)
+			{
+				return true;
+			}
 			this->getInputTraffic().incrementHTTP();
 			port->getOutputTraffic().incrementHTTP();
 		}
@@ -212,61 +205,66 @@ bool Port::savePDU(Port* port, Tins::PDU& pdu)
 		try
 		{
 			const Tins::UDP& udp = pdu.rfind_pdu<Tins::UDP>();
+			if (this->port_number_ != 0 && this->b_filter_deny && this->b_udp_)
+			{
+				if (this->b_filter_out)			
+					this->getInputTraffic().incrementUDP();
+				qDebug() << "\tUDP\n";
+				return true;
+			}
+			else if (this->port_number_ != 0 && !this->b_filter_deny && !this->b_udp_)
+			{
+				return true;
+			}
 			this->getInputTraffic().incrementUDP();
 			port->getOutputTraffic().incrementUDP();
-
-			//hashValue += (std::to_string(udp.dport()) + std::to_string(udp.sport()) + std::to_string(udp.length()) + std::to_string(udp.checksum())).c_str();
 		}
 		catch (const std::exception&)
 		{
 			try
 			{
 				const Tins::ICMP& icmp = pdu.rfind_pdu<Tins::ICMP>();
+				if (this->port_number_ != 0 && this->b_filter_deny && this->b_icmp_)
+				{
+					if (this->b_filter_out)
+						this->getInputTraffic().incrementICMP();
+					qDebug() << "\tICMP\n";
+					return true;
+				}
+				else if (this->port_number_ != 0 && !this->b_filter_deny && !this->b_icmp_)
+				{
+					return true;
+				}
 				this->getInputTraffic().incrementICMP();
 				this->loopbackSeconds = 0;
 				port->getOutputTraffic().incrementICMP();
-
-				//hashValue += (std::to_string(icmp.code()) + std::to_string(icmp.checksum()) + std::to_string(icmp.id()) + std::to_string(icmp.sequence())).c_str();
 			}
 			catch (const std::exception&)
 			{
-				// this->sendPDU(port, pdu);
-				//while (this->wait_);
 				return true;
 			}
 		}
 	}
-	// this->sendPDU(port, pdu);
-	//hashValue = QCryptographicHash::hash(hashValue, QCryptographicHash::Md5);
-	//if (!this->getHash(hashValue))
-	//	return true;
 	auto bufferSerialize = pdu.serialize();
-
 	uint hash_ = qHash(bufferSerialize, QCryptographicHash::Md5);
 
-	auto it = std::find(/*this->*/hashMap_.begin(), /*this->*/hashMap_.end(), hash_);
-	if (it != /*this->*/hashMap_.end())
+	auto it = std::find(hashMap_.begin(), hashMap_.end(), hash_);
+	if (it != hashMap_.end())
 	{
 		qDebug() << this->friendlyName_.c_str() << " " << hash_ << '\n';
-		//return false;
 		return true;
 	}
 	else
 	{
 		qDebug() << "push back "<<this->friendlyName_.c_str() << " " << hash_ << '\n';
-		/*this->*/hashMap_.push_back(hash_);
+		hashMap_.push_back(hash_);
 	}
-
 	this->bufferPDU_.push_back(pdu.clone());
-	//while (this->wait_);
 	return true;
 }
 
 void Port::captureTraffic(Port* port2)
-{/*
-	Tins::SnifferConfiguration config;
-	config.set_promisc_mode(true);
-	config.set_immediate_mode(true);*/
+{
 	Tins::Sniffer sniffer(this->getNetworkInterface_().name(), this->config_);
 	qDebug() << "Name: " << this->getNetworkInterface_().name().c_str() << '\n';
 	sniffer.sniff_loop(
@@ -276,11 +274,10 @@ void Port::captureTraffic(Port* port2)
 			std::placeholders::_1
 		)
 	);
-
-	if (this->setFilter_)
-	{
-		this->setFilter_ = false;
-		qDebug() << "woala!\n";
-		this->captureTraffic(port2);
-	}
+	//if (this->b_filter_protocol_)
+	//{
+	//	this->b_filter_protocol_ = false;
+	//	qDebug() << "woala!\n";
+	//	this->captureTraffic(port2);
+	//}
 }

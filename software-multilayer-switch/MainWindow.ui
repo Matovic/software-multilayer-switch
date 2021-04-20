@@ -62,7 +62,7 @@ QPushButton:pressed {
     <item row="17" column="2">
      <widget class="QLineEdit" name="filterSetIPLineEdit">
       <property name="text">
-       <string>IP address</string>
+       <string>src IP address + any</string>
       </property>
      </widget>
     </item>
@@ -89,7 +89,7 @@ QPushButton:pressed {
     <item row="17" column="0">
      <widget class="QLineEdit" name="filterSetMACLineEdit">
       <property name="text">
-       <string>MAC address</string>
+       <string>src MAC address + any</string>
       </property>
      </widget>
     </item>
@@ -204,6 +204,20 @@ QPushButton:pressed {
      <widget class="QLineEdit" name="filterPermitDenyLineEdit">
       <property name="text">
        <string>permit deny</string>
+      </property>
+     </widget>
+    </item>
+    <item row="15" column="0">
+     <widget class="QLineEdit" name="filterSetDstMACLineEdit">
+      <property name="text">
+       <string>dst MAC address + any</string>
+      </property>
+     </widget>
+    </item>
+    <item row="15" column="2">
+     <widget class="QLineEdit" name="filterSetDstIPLineEdit">
+      <property name="text">
+       <string>dst IP address + any</string>
       </property>
      </widget>
     </item>
