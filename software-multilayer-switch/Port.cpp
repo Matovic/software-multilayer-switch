@@ -83,14 +83,26 @@ std::deque<Tins::PDU*>& Port::getBuffer()
 
 bool Port::savePDU(Port* port, Tins::PDU& pdu)
 {
-	/*if (this->b_filter_protocol_)
+	// filter set to deny everything
+	if (this->port_number_ != 0 && this->b_filter_deny &&
+		(this->filter_src_ip_add_ == "any" || this->filter_src_mac_add_ == "any" || this->filter_dst_ip_add_ == "any" || this->filter_dst_mac_add_ == "any"))
 	{
-		qDebug() << "set filters!\n";
-		return false;
-	}*/
+		return true;
+	}
+
 	try
 	{
 		const Tins::EthernetII& eth = pdu.rfind_pdu<Tins::EthernetII>();
+
+		// filter
+		Tins::HWAddress<6> dst_addr = eth.dst_addr();
+		Tins::HWAddress<6> src_addr = eth.src_addr();
+
+		if (this->port_number_ != 0 && this->b_filter_deny &&
+			(dst_addr.to_string() == this->filter_dst_mac_add_ || src_addr.to_string() == this->filter_src_mac_add_))
+		{
+			return true;
+		}
 		try
 		{
 			const Tins::Loopback& loopback = pdu.rfind_pdu<Tins::Loopback>();
@@ -111,6 +123,14 @@ bool Port::savePDU(Port* port, Tins::PDU& pdu)
 	try
 	{
 		const Tins::IP& ip = pdu.rfind_pdu<Tins::IP>();
+		Tins::IPv4Address src_ip = ip.src_addr();
+		Tins::IPv4Address dst_ip = ip.dst_addr();
+
+		if (this->port_number_ != 0 && this->b_filter_deny &&
+			(src_ip.to_string() == this->filter_src_ip_add_ || dst_ip.to_string() == this->filter_dst_ip_add_))
+		{
+			return true;
+		}
 		if (this->port_number_ != 0 && this->b_filter_deny && this->b_ip_)
 		{
 			if (this->b_filter_out)
