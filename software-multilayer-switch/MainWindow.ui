@@ -119,13 +119,6 @@ QPushButton:pressed {
       </property>
      </widget>
     </item>
-    <item row="20" column="2">
-     <widget class="QLineEdit" name="deleteFilterLineEdit">
-      <property name="text">
-       <string>number to delete filters</string>
-      </property>
-     </widget>
-    </item>
     <item row="4" column="3">
      <widget class="QTextEdit" name="FilterTableDisplay">
       <property name="styleSheet">
@@ -255,10 +248,31 @@ QPushButton:pressed {
       </property>
      </widget>
     </item>
-    <item row="20" column="3">
+    <item row="21" column="2">
+     <widget class="QLineEdit" name="deleteFilterLineEdit">
+      <property name="text">
+       <string>number to delete filters</string>
+      </property>
+     </widget>
+    </item>
+    <item row="21" column="3">
      <widget class="QLineEdit" name="filterPortDeleteLineEdit">
       <property name="text">
        <string>port to delete filter on</string>
+      </property>
+     </widget>
+    </item>
+    <item row="20" column="2">
+     <widget class="QLineEdit" name="filterSetSrcPortLineEdit">
+      <property name="text">
+       <string>src port</string>
+      </property>
+     </widget>
+    </item>
+    <item row="20" column="3">
+     <widget class="QLineEdit" name="filterSetDstPortLineEdit">
+      <property name="text">
+       <string>dst port</string>
       </property>
      </widget>
     </item>

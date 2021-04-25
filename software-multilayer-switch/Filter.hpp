@@ -12,6 +12,9 @@ public:
 		filter_dst_ip_add_,									// filter based on destination IP address
 		filter_src_mac_add_,								// filter based on source MAC address
 		filter_dst_mac_add_;								// filter based on source MAC address
+	int
+		filter_src_port,
+		filter_dst_port;
 	bool b_http_, b_icmp_, b_tcp_, b_udp_, b_ip_, b_arp_;	// filter based on network protocol
 	bool b_filter_protocol_;
 	bool b_filter_out;										// filter based on IN or OUT direction, false is for IN and true is for OUT

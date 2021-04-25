@@ -60,7 +60,57 @@ void SwSwitch::sendPDU(Port& port, Tins::PDU& pdu)
 		{
 			qDebug() << "\tcatch\n";
 		}
+		try
+		{
+			const Tins::TCP& tcp = pdu.rfind_pdu<Tins::TCP>();
+			auto src_port = tcp.sport();
+			auto dst_port = tcp.dport();
 
+			for (auto& filter : port.v_filters_)
+			{
+				if (filter.b_filter_deny && (src_port == filter.filter_src_port || dst_port == filter.filter_dst_port))
+				{
+					return;
+				}
+
+				if (filter.b_filter_deny && filter.b_tcp_)
+				{
+					return;
+				}
+				else if (!filter.b_filter_deny && !filter.b_tcp_)
+				{
+					return;
+				}
+			}
+		}
+		catch (const std::exception&)
+		{
+			try
+			{
+				const Tins::UDP& udp = pdu.rfind_pdu<Tins::UDP>();
+				auto src_port = udp.sport();
+				auto dst_port = udp.dport();
+				for (auto& filter : port.v_filters_)
+				{
+					if (filter.b_filter_deny && (src_port == filter.filter_src_port || dst_port == filter.filter_dst_port))
+					{
+						return;
+					}
+					if (filter.b_filter_deny && filter.b_udp_)
+					{
+						return;
+					}
+					else if (!filter.b_filter_deny && !filter.b_udp_)
+					{
+						return;
+					}
+				}
+			}
+			catch (const std::exception&)
+			{
+				qDebug() << "\tcatch not tcp || udp\n";
+			}
+		}
 		auto it = this->camTable_.find(dst_addr);
 		if (it != this->camTable_.end())
 		{

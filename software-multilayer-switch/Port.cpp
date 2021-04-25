@@ -58,19 +58,31 @@ std::string Port::getPortStatistics()
 
 std::string Port::getFilter()
 {
-	std::string str = "\n" + this->getFriendlyName() + "\n";
+	std::string str = this->getFriendlyName() + "\n";
 	int i = 0;
 	for (auto& filter : this->v_filters_)
 	{
+		str += "\n";
 		str += std::to_string(i);
+
 		str += "\nsrc ip add: ";
-		str += filter.filter_src_ip_add_;		
+		str += filter.filter_src_ip_add_;	
+
 		str += "\ndst ip add: ";
 		str += filter.filter_dst_ip_add_;
-		str += "\nfilter_src_mac_add_";
+
+		str += "\nfilter_src_mac_add: ";
 		str += filter.filter_src_mac_add_;
-		str += "\nfilter_dst_mac_add_";
-		str += filter.filter_dst_mac_add_;		
+
+		str += "\nfilter_dst_mac_add: ";
+		str += filter.filter_dst_mac_add_;
+
+		str += "\nfilter_src_port: ";
+		str += std::to_string(filter.filter_src_port);
+
+		str += "\nfilter_dst_port: ";
+		str += std::to_string(filter.filter_dst_port);
+
 		str += "\nProtocols: ";
 
 		if (filter.b_http_)
@@ -127,12 +139,15 @@ std::deque<Tins::PDU*>& Port::getBuffer()
 
 bool Port::savePDU(Port* port, Tins::PDU& pdu)
 {
-	// filter set to deny everything
-	//if (this->port_number_ != 0 && this->b_filter_deny &&
-	//	(this->filter_src_ip_add_ == "any" || this->filter_src_mac_add_ == "any" || this->filter_dst_ip_add_ == "any" || this->filter_dst_mac_add_ == "any"))
-	//{
-	//	return true;
-	//}
+	for (auto& filter : this->v_filters_)
+	{
+		// filter set to deny everything
+		if (filter.b_filter_deny && (filter.filter_src_ip_add_ == "any" ||
+			filter.filter_src_mac_add_ == "any" || filter.filter_dst_ip_add_ == "any" || filter.filter_dst_mac_add_ == "any"))
+		{
+			return true;
+		}
+	}
 
 	try
 	{
@@ -141,12 +156,12 @@ bool Port::savePDU(Port* port, Tins::PDU& pdu)
 		// filter
 		Tins::HWAddress<6> dst_addr = eth.dst_addr();
 		Tins::HWAddress<6> src_addr = eth.src_addr();
-
-		//if (this->port_number_ != 0 && this->b_filter_deny &&
-		//	(dst_addr.to_string() == this->filter_dst_mac_add_ || src_addr.to_string() == this->filter_src_mac_add_))
-		//{
-		//	return true;
-		//}
+		for (auto& filter : this->v_filters_)
+			if (filter.b_filter_deny && (dst_addr.to_string() == filter.filter_dst_mac_add_ ||
+				src_addr.to_string() == filter.filter_src_mac_add_))
+			{
+				return true;
+			}
 		try
 		{
 			const Tins::Loopback& loopback = pdu.rfind_pdu<Tins::Loopback>();
@@ -156,8 +171,13 @@ bool Port::savePDU(Port* port, Tins::PDU& pdu)
 		catch (const std::exception&)
 		{
 			this->getInputTraffic().incrementEthernetII();
-			//if (this->port_number_ != 0 && !this->b_filter_deny)
+			for (auto& filter : this->v_filters_)
+			{
+				if (filter.b_filter_deny) 
+					continue;
 				port->getOutputTraffic().incrementEthernetII();
+			}
+
 		}
 	}
 	catch (const std::exception&)
@@ -169,23 +189,23 @@ bool Port::savePDU(Port* port, Tins::PDU& pdu)
 		const Tins::IP& ip = pdu.rfind_pdu<Tins::IP>();
 		Tins::IPv4Address src_ip = ip.src_addr();
 		Tins::IPv4Address dst_ip = ip.dst_addr();
-
-		//if (this->port_number_ != 0 && this->b_filter_deny &&
-		//	(src_ip.to_string() == this->filter_src_ip_add_ || dst_ip.to_string() == this->filter_dst_ip_add_))
-		//{
-		//	return true;
-		//}
-		//if (this->port_number_ != 0 && this->b_filter_deny && this->b_ip_)
-		//{
-		//	if (this->b_filter_out)
-		//		this->getInputTraffic().incrementIP();
-		//	qDebug() << "\tIP\n";
-		//	return true;
-		//}
-		//else if(this->port_number_ != 0 && !this->b_filter_deny && !this->b_ip_)
-		//{
-		//	return true;
-		//}
+		for (auto& filter : this->v_filters_)
+		{
+			if (filter.b_filter_deny && (src_ip.to_string() == filter.filter_src_ip_add_ || dst_ip.to_string() == filter.filter_dst_ip_add_))
+			{
+				return true;
+			}
+			if (filter.b_filter_deny && filter.b_ip_)
+			{
+				if (filter.b_filter_out)
+					this->getInputTraffic().incrementIP();
+				return true;
+			}
+			else if (filter.b_filter_deny && !filter.b_ip_)
+			{
+				return true;
+			}
+		}
 		this->getInputTraffic().incrementIP();
 		port->getOutputTraffic().incrementIP();
 	}
@@ -194,17 +214,19 @@ bool Port::savePDU(Port* port, Tins::PDU& pdu)
 		try
 		{
 			const Tins::ARP& arp = pdu.rfind_pdu<Tins::ARP>();
-			//if (this->port_number_ != 0 && this->b_filter_deny && this->b_arp_)
-			//{
-			//	if (this->b_filter_out)
-			//		this->getInputTraffic().incrementARP();
-			//	qDebug() << "\tARP\n";
-			//	return true;
-			//}
-			//else if (this->port_number_ != 0 && !this->b_filter_deny && !this->b_arp_)
-			//{
-			//	return true;
-			//}
+			for (auto& filter : this->v_filters_)
+			{
+				if (filter.b_filter_deny && filter.b_arp_)
+				{
+					if (filter.b_filter_out)
+						this->getInputTraffic().incrementARP();
+					return true;
+				}
+				else if (!filter.b_filter_deny && !filter.b_arp_)
+				{
+					return true;
+				}
+			}
 			this->getInputTraffic().incrementARP();
 			port->getOutputTraffic().incrementARP();
 
@@ -233,33 +255,45 @@ bool Port::savePDU(Port* port, Tins::PDU& pdu)
 	try
 	{
 		const Tins::TCP& tcp = pdu.rfind_pdu<Tins::TCP>();
-		//if (this->port_number_ != 0 && this->b_filter_deny && this->b_tcp_)
-		//{
-		//	if (this->b_filter_out)		
-		//		this->getInputTraffic().incrementTCP();
-		//	qDebug() << "\tTCP\n";
-		//	return true;
-		//}
-		//else if (this->port_number_ != 0 && !this->b_filter_deny && !this->b_tcp_)
-		//{
-		//	return true;
-		//}
+		auto src_port = tcp.sport();
+		auto dst_port = tcp.dport();
+
+		for (auto& filter : this->v_filters_)
+		{
+			if (filter.b_filter_deny && (src_port == filter.filter_src_port || dst_port == filter.filter_dst_port))
+			{
+				return true;
+			}
+
+			if (filter.b_filter_deny && filter.b_tcp_)
+			{
+				if (filter.b_filter_out)
+					this->getInputTraffic().incrementTCP();
+				return true;
+			}
+			else if (!filter.b_filter_deny && !filter.b_tcp_)
+			{
+				return true;
+			}
+		}
 		this->getInputTraffic().incrementTCP();
 		port->getOutputTraffic().incrementTCP();
 
 		if (tcp.dport() == 80 || tcp.sport() == 80)
 		{
-			//if (this->port_number_ != 0 && this->b_filter_deny && this->b_http_)
-			//{
-			//	if (this->b_filter_out)
-			//		this->getInputTraffic().incrementHTTP();
-			//	qDebug() << "\tHTTP\n";
-			//	return true;
-			//}
-			//else if (this->port_number_ != 0 && !this->b_filter_deny && !this->b_http_)
-			//{
-			//	return true;
-			//}
+			for (auto& filter : this->v_filters_)
+			{
+				if (filter.b_filter_deny && filter.b_http_)
+				{
+					if (filter.b_filter_out)
+						this->getInputTraffic().incrementHTTP();
+					return true;
+				}
+				else if (!filter.b_filter_deny && !filter.b_http_)
+				{
+					return true;
+				}
+			}
 			this->getInputTraffic().incrementHTTP();
 			port->getOutputTraffic().incrementHTTP();
 		}
@@ -269,17 +303,25 @@ bool Port::savePDU(Port* port, Tins::PDU& pdu)
 		try
 		{
 			const Tins::UDP& udp = pdu.rfind_pdu<Tins::UDP>();
-			//if (this->port_number_ != 0 && this->b_filter_deny && this->b_udp_)
-			//{
-			//	if (this->b_filter_out)			
-			//		this->getInputTraffic().incrementUDP();
-			//	qDebug() << "\tUDP\n";
-			//	return true;
-			//}
-			//else if (this->port_number_ != 0 && !this->b_filter_deny && !this->b_udp_)
-			//{
-			//	return true;
-			//}
+			auto src_port = udp.sport();
+			auto dst_port = udp.dport();
+			for (auto& filter : this->v_filters_)
+			{
+				if (filter.b_filter_deny && (src_port == filter.filter_src_port || dst_port == filter.filter_dst_port))
+				{
+					return true;
+				}
+				if (filter.b_filter_deny && filter.b_udp_)
+				{
+					if (filter.b_filter_out)
+						this->getInputTraffic().incrementUDP();
+					return true;
+				}
+				else if (!filter.b_filter_deny && !filter.b_udp_)
+				{
+					return true;
+				}
+			}
 			this->getInputTraffic().incrementUDP();
 			port->getOutputTraffic().incrementUDP();
 		}
@@ -288,17 +330,20 @@ bool Port::savePDU(Port* port, Tins::PDU& pdu)
 			try
 			{
 				const Tins::ICMP& icmp = pdu.rfind_pdu<Tins::ICMP>();
-				//if (this->port_number_ != 0 && this->b_filter_deny && this->b_icmp_)
-				//{
-				//	if (this->b_filter_out)
-				//		this->getInputTraffic().incrementICMP();
-				//	qDebug() << "\tICMP\n";
-				//	return true;
-				//}
-				//else if (this->port_number_ != 0 && !this->b_filter_deny && !this->b_icmp_)
-				//{
-				//	return true;
-				//}
+
+				for (auto& filter : this->v_filters_)
+				{
+					if (filter.b_filter_deny && filter.b_icmp_)
+					{
+						if (filter.b_filter_out)
+							this->getInputTraffic().incrementICMP();
+						return true;
+					}
+					else if (!filter.b_filter_deny && !filter.b_icmp_)
+					{
+						return true;
+					}
+				}
 				this->getInputTraffic().incrementICMP();
 				this->loopbackSeconds = 0;
 				port->getOutputTraffic().incrementICMP();

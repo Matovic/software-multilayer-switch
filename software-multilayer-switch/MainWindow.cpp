@@ -135,8 +135,11 @@ void MainWindow::setFiltersButtonPressed()
 
     filter.filter_src_ip_add_ = this->ui.filterSetIPLineEdit->text().toStdString();
     filter.filter_src_mac_add_ = this->ui.filterSetMACLineEdit->text().toStdString();
-    filter.filter_dst_ip_add_ = this->ui.filterSetIPLineEdit->text().toStdString();
-    filter.filter_dst_mac_add_ = this->ui.filterSetMACLineEdit->text().toStdString();
+    filter.filter_dst_ip_add_ = this->ui.filterSetDstIPLineEdit->text().toStdString();
+    filter.filter_dst_mac_add_ = this->ui.filterSetDstMACLineEdit->text().toStdString();
+    filter.filter_src_port = this->ui.filterSetSrcPortLineEdit->text().toInt();
+    filter.filter_dst_port = this->ui.filterSetDstPortLineEdit->text().toInt();
+
 
     // find protocols
     std::string filter_protocol = this->ui.filterProtocolLineEdit->text().toStdString();
