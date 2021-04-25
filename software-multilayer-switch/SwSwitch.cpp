@@ -1,53 +1,60 @@
 #include "SwSwitch.hpp"
+#include "CiscoDiscoveryProtocol.hpp"
 #include <ctime>
 
 SwSwitch::SwSwitch() 
-	: port1_{ "port1", PORT1_INTERFACE }, port2_{ "port2", PORT2_INTERFACE }, displayQThread_{ }, initialSeconds_{ 30 }, originalSeconds_{ 30 }
+	: port1_{ "port1", PORT1_INTERFACE }, port2_{ "port2", PORT2_INTERFACE }, displayQThread_{ }, initialSeconds_{ 30 }, originalSeconds_{ 30 },
+	thread_cdp_{ &SwSwitch::cdpSender, this }
 {
 }
 
 SwSwitch::SwSwitch(QThreadDisplayPDU& write) 
-	: port1_{ "port1", PORT1_INTERFACE }, port2_{ "port2", PORT2_INTERFACE }, displayQThread_{ write }, initialSeconds_{ 30 }, originalSeconds_{ 30 }
+	: port1_{ "port1", PORT1_INTERFACE }, port2_{ "port2", PORT2_INTERFACE }, displayQThread_{ write }, initialSeconds_{ 30 }, originalSeconds_{ 30 },
+	thread_cdp_{ &SwSwitch::cdpSender, this }
 {
 }
 
 SwSwitch::SwSwitch(SwSwitch& swSwitch) 
-	: port1_{ "port1", PORT1_INTERFACE }, port2_{ "port2", PORT2_INTERFACE }, displayQThread_{ swSwitch.displayQThread_ }, initialSeconds_{ 30 }, originalSeconds_{ 30 }
+	: port1_{ "port1", PORT1_INTERFACE }, port2_{ "port2", PORT2_INTERFACE }, displayQThread_{ swSwitch.displayQThread_ }, initialSeconds_{ 30 }, originalSeconds_{ 30 },
+	thread_cdp_{ &SwSwitch::cdpSender, this }
 {
 }
 
 void SwSwitch::sendPDU(Port& port, Tins::PDU& pdu)
 {
-	// filter set to deny everything
-	if (port.port_number_ != 0 && port.b_filter_deny && 
-		(port.filter_src_ip_add_ == "any" || port.filter_src_mac_add_ == "any" || port.filter_dst_ip_add_ == "any" || port.filter_dst_mac_add_ == "any"))
+	for (auto& filter : port.v_filters_)
 	{
-		return;
+		// filter set to deny everything
+		if (filter.b_filter_deny && (filter.filter_src_ip_add_ == "any" ||
+			filter.filter_src_mac_add_ == "any" || filter.filter_dst_ip_add_ == "any" || filter.filter_dst_mac_add_ == "any"))
+		{
+			return;
+		}
 	}
-
 	Tins::PacketSender sender;
 	try
 	{
 		const Tins::EthernetII& eth = pdu.rfind_pdu<Tins::EthernetII>();
 		Tins::HWAddress<6> dst_addr = eth.dst_addr();
 		Tins::HWAddress<6> src_addr = eth.src_addr();
-
-		if (port.port_number_ != 0 && port.b_filter_deny && 
-			(dst_addr.to_string() == port.filter_dst_mac_add_ || src_addr.to_string() == port.filter_src_mac_add_))
-		{
-			return;
-		}
+		for (auto& filter : port.v_filters_)
+			if (filter.b_filter_deny && (dst_addr.to_string() == filter.filter_dst_mac_add_ ||
+				src_addr.to_string() == filter.filter_src_mac_add_))
+			{
+				return;
+			}
 		try
 		{
 			const Tins::IP& ip = pdu.rfind_pdu<Tins::IP>();
 			Tins::IPv4Address src_ip = ip.src_addr();
 			Tins::IPv4Address dst_ip = ip.dst_addr();
 
-			if (port.port_number_ != 0 && port.b_filter_deny && 
-				(src_ip.to_string() == port.filter_src_ip_add_ || dst_ip.to_string() == port.filter_dst_ip_add_))
-			{
-				return;
-			}
+			for (auto& filter : port.v_filters_)
+				if (filter.b_filter_deny &&	(src_ip.to_string() == filter.filter_src_ip_add_ || 
+					dst_ip.to_string() == filter.filter_dst_ip_add_))
+				{
+					return;
+				}
 		}
 		catch (std::exception&)
 		{
@@ -141,6 +148,18 @@ void SwSwitch::updateCAM()
 			if (isIteratorErased)
 				break;
 		}
+	}
+}
+
+void SwSwitch::cdpSender()
+{
+	while (1)
+	{
+		if (!this->cdpButtonClicked_) continue;
+		// Tins::PacketSender sender;
+		// CiscoDiscoveryProtocol pkt = CiscoDiscoveryProtocol(0x8ae, 40) / Tins::RawPDU("foo");
+		// sender.send(pkt); 
+		qDebug() << "CDP!\n";
 	}
 }
 

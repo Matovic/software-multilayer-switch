@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>873</width>
-    <height>675</height>
+    <width>906</width>
+    <height>746</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,81 +15,37 @@
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="14" column="0">
-     <widget class="QPushButton" name="startButton">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="styleSheet">
-       <string notr="true">QPushButton {
-     background-color: #C0C0C0; border: 1px solid gray;
-	border-radius: 0px;
-	padding: 5px;
-}
-QPushButton:pressed {
-    background-color: #A9A9A9; border: 1px solid gray;
-	border-radius: 0px;
-	padding: 5px;
-}</string>
+    <item row="0" column="2">
+     <widget class="QLabel" name="camTableLabel">
+      <property name="layoutDirection">
+       <enum>Qt::LeftToRight</enum>
       </property>
       <property name="text">
-       <string>start</string>
+       <string>CAM Table</string>
       </property>
-     </widget>
-    </item>
-    <item row="4" column="0" rowspan="8">
-     <widget class="QTextEdit" name="statisticsDisplay">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="styleSheet">
-       <string notr="true">QTextEdit {
-     background-color: gray; border: 1px solid gray;
-	color: #ffffff;
-}</string>
-      </property>
-      <property name="readOnly">
-       <bool>true</bool>
-      </property>
-     </widget>
-    </item>
-    <item row="17" column="2">
-     <widget class="QLineEdit" name="filterSetIPLineEdit">
-      <property name="text">
-       <string>src IP address + any</string>
-      </property>
-     </widget>
-    </item>
-    <item row="19" column="0">
-     <widget class="QLineEdit" name="filterIOLineEdit">
-      <property name="text">
-       <string>in out</string>
-      </property>
-     </widget>
-    </item>
-    <item row="12" column="0">
-     <widget class="QLineEdit" name="setTimerLineEdit">
-      <property name="styleSheet">
-       <string notr="true">QLineEdit {
-     background-color: gray; border: 1px solid gray;
-	color: #ffffff;
-}</string>
-      </property>
-      <property name="text">
-       <string>Timer in secons</string>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
       </property>
      </widget>
     </item>
     <item row="17" column="0">
-     <widget class="QLineEdit" name="filterSetMACLineEdit">
+     <widget class="QLineEdit" name="filterSetPortLineEdit">
       <property name="text">
-       <string>src MAC address + any</string>
+       <string>Port number</string>
+      </property>
+     </widget>
+    </item>
+    <item row="17" column="3">
+     <widget class="QLineEdit" name="filterSetDstIPLineEdit">
+      <property name="text">
+       <string>dst IP address + any</string>
+      </property>
+     </widget>
+    </item>
+    <item row="12" column="3">
+     <widget class="QLineEdit" name="filterSetDstMACLineEdit">
+      <property name="text">
+       <string>dst MAC address + any</string>
       </property>
      </widget>
     </item>
@@ -118,7 +74,126 @@ QPushButton:pressed {
       </property>
      </widget>
     </item>
+    <item row="20" column="0">
+     <widget class="QPushButton" name="filterSetButton">
+      <property name="text">
+       <string>set filters</string>
+      </property>
+     </widget>
+    </item>
+    <item row="12" column="0">
+     <widget class="QLineEdit" name="setTimerLineEdit">
+      <property name="styleSheet">
+       <string notr="true">QLineEdit {
+     background-color: gray; border: 1px solid gray;
+	color: #ffffff;
+}</string>
+      </property>
+      <property name="text">
+       <string>Timer in secons</string>
+      </property>
+     </widget>
+    </item>
+    <item row="14" column="0">
+     <widget class="QPushButton" name="startButton">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QPushButton {
+     background-color: #C0C0C0; border: 1px solid gray;
+	border-radius: 0px;
+	padding: 5px;
+}
+QPushButton:pressed {
+    background-color: #A9A9A9; border: 1px solid gray;
+	border-radius: 0px;
+	padding: 5px;
+}</string>
+      </property>
+      <property name="text">
+       <string>start</string>
+      </property>
+     </widget>
+    </item>
+    <item row="20" column="2">
+     <widget class="QLineEdit" name="deleteFilterLineEdit">
+      <property name="text">
+       <string>number to delete filters</string>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="3">
+     <widget class="QTextEdit" name="FilterTableDisplay">
+      <property name="styleSheet">
+       <string notr="true">QTextEdit {
+     background-color: gray; border: 1px solid gray;
+	color: #ffffff;
+}</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="3">
+     <widget class="QLabel" name="label">
+      <property name="text">
+       <string>Filters</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+    </item>
+    <item row="14" column="3">
+     <widget class="QLineEdit" name="filterSetMACLineEdit">
+      <property name="text">
+       <string>src MAC address + any</string>
+      </property>
+     </widget>
+    </item>
+    <item row="18" column="3">
+     <widget class="QLineEdit" name="filterSetIPLineEdit">
+      <property name="text">
+       <string>src IP address + any</string>
+      </property>
+     </widget>
+    </item>
+    <item row="18" column="0">
+     <widget class="QLineEdit" name="filterIOLineEdit">
+      <property name="text">
+       <string>in out</string>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="0" rowspan="8">
+     <widget class="QTextEdit" name="statisticsDisplay">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QTextEdit {
+     background-color: gray; border: 1px solid gray;
+	color: #ffffff;
+}</string>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
     <item row="18" column="2">
+     <widget class="QLineEdit" name="filterPermitDenyLineEdit">
+      <property name="text">
+       <string>permit deny</string>
+      </property>
+     </widget>
+    </item>
+    <item row="17" column="2">
      <widget class="QLineEdit" name="filterProtocolLineEdit">
       <property name="text">
        <string>http icmp tcp udp ip arp</string>
@@ -144,6 +219,16 @@ QPushButton:pressed {
       </property>
      </widget>
     </item>
+    <item row="0" column="0">
+     <widget class="QLabel" name="statisticsLabel">
+      <property name="text">
+       <string>Statistics</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+    </item>
     <item row="4" column="2" rowspan="8">
      <widget class="QTextEdit" name="camTableDisplay">
       <property name="sizePolicy">
@@ -163,61 +248,17 @@ QPushButton:pressed {
       </property>
      </widget>
     </item>
-    <item row="18" column="0">
-     <widget class="QLineEdit" name="filterSetPortLineEdit">
+    <item row="21" column="0">
+     <widget class="QPushButton" name="filterDeleteButton">
       <property name="text">
-       <string>Port number</string>
+       <string>delete filter</string>
       </property>
      </widget>
     </item>
-    <item row="0" column="0">
-     <widget class="QLabel" name="statisticsLabel">
+    <item row="20" column="3">
+     <widget class="QLineEdit" name="filterPortDeleteLineEdit">
       <property name="text">
-       <string>Statistics</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="2">
-     <widget class="QLabel" name="camTableLabel">
-      <property name="layoutDirection">
-       <enum>Qt::LeftToRight</enum>
-      </property>
-      <property name="text">
-       <string>CAM Table</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-    </item>
-    <item row="20" column="0">
-     <widget class="QPushButton" name="filterSetButton">
-      <property name="text">
-       <string>set filters</string>
-      </property>
-     </widget>
-    </item>
-    <item row="19" column="2">
-     <widget class="QLineEdit" name="filterPermitDenyLineEdit">
-      <property name="text">
-       <string>permit deny</string>
-      </property>
-     </widget>
-    </item>
-    <item row="15" column="0">
-     <widget class="QLineEdit" name="filterSetDstMACLineEdit">
-      <property name="text">
-       <string>dst MAC address + any</string>
-      </property>
-     </widget>
-    </item>
-    <item row="15" column="2">
-     <widget class="QLineEdit" name="filterSetDstIPLineEdit">
-      <property name="text">
-       <string>dst IP address + any</string>
+       <string>port to delete filter on</string>
       </property>
      </widget>
     </item>
@@ -228,7 +269,7 @@ QPushButton:pressed {
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>873</width>
+     <width>906</width>
      <height>26</height>
     </rect>
    </property>

@@ -24,6 +24,7 @@ private:
 
 private slots:
     void startButtonPressed();
+    void deleteFilterButtonPressed();
     void clearButtonPressed();
     void setTimerButtonPressed();
     void setFiltersButtonPressed();

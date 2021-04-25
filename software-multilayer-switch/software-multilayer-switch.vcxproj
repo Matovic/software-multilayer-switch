@@ -85,6 +85,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CiscoDiscoveryProtocol.cpp" />
+    <ClCompile Include="Filter.cpp" />
     <ClCompile Include="Port.cpp" />
     <ClCompile Include="PortCounter.cpp" />
     <ClCompile Include="SwSwitch.cpp" />
@@ -96,6 +98,8 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CiscoDiscoveryProtocol.hpp" />
+    <ClInclude Include="Filter.hpp" />
     <ClInclude Include="Port.hpp" />
     <ClInclude Include="PortCounter.hpp" />
     <ClInclude Include="SwSwitch.hpp" />

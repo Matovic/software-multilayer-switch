@@ -19,6 +19,12 @@
     <ClCompile Include="SwSwitch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="CiscoDiscoveryProtocol.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Filter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">
@@ -60,6 +66,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SwSwitch.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CiscoDiscoveryProtocol.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Filter.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
